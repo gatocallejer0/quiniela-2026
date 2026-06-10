@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -67,24 +67,40 @@ export default function Partidos() {
     if (!cargando && !session) router.replace("/");
   }, [cargando, session, router]);
 
+  const cargarDatos = useCallback(async (userId: string) => {
+    setCargandoData(true);
+    const limite = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000));
+    try {
+      const [{ data: ps }, { data: prs }] = await Promise.race([
+        Promise.all([
+          supabase.from("partidos").select("*").order("inicio", { ascending: true }),
+          supabase.from("pronosticos").select("*").eq("usuario_id", userId),
+        ]),
+        limite.then(() => { throw new Error("timeout"); }),
+      ]) as any;
+      setPartidos((ps as Partido[]) ?? []);
+      const mapa: Record<number, Pronostico> = {};
+      (prs as Pronostico[] | null)?.forEach((p) => (mapa[p.partido_id] = p));
+      setPronos(mapa);
+    } catch (_) {
+    } finally {
+      setCargandoData(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!session) return;
-    (async () => {
-      try {
-        const [{ data: ps }, { data: prs }] = await Promise.all([
-          supabase.from("partidos").select("*").order("inicio", { ascending: true }),
-          supabase.from("pronosticos").select("*").eq("usuario_id", session.user.id),
-        ]);
-        setPartidos((ps as Partido[]) ?? []);
-        const mapa: Record<number, Pronostico> = {};
-        (prs as Pronostico[] | null)?.forEach((p) => (mapa[p.partido_id] = p));
-        setPronos(mapa);
-      } catch (_) {
-      } finally {
-        setCargandoData(false);
-      }
-    })();
-  }, [session]);
+    cargarDatos(session.user.id);
+  }, [session, cargarDatos]);
+
+  useEffect(() => {
+    if (!session) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") cargarDatos(session.user.id);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [session, cargarDatos]);
 
   if (cargando || !session) return null;
 
