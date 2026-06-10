@@ -37,16 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    const timeout = setTimeout(() => setCargando(false), 5000);
+
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
       if (data.session) await cargarPerfil(data.session.user.id);
-      setCargando(false);
-    });
+    }).catch(() => {}).finally(() => { clearTimeout(timeout); setCargando(false); });
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
       setSession(s);
-      if (s) await cargarPerfil(s.user.id);
+      if (s) await cargarPerfil(s.user.id).catch(() => {});
       else setPerfil(null);
+      setCargando(false);
     });
     return () => sub.subscription.unsubscribe();
   }, []);

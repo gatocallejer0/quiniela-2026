@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/lib/auth";
 import { Nav } from "@/components/Nav";
 import { BottomNav } from "@/components/BottomNav";
+import { LoadingGuard } from "@/components/LoadingGuard";
 
 export const metadata: Metadata = {
   title: "Quiniela Familiar · Mundial 2026",
@@ -20,7 +21,7 @@ export default function RootLayout({
         <AuthProvider>
           <Nav />
           <main className="mx-auto w-full max-w-[1280px] px-4 pb-24 pt-20 md:px-12">
-            {children}
+            <LoadingGuard>{children}</LoadingGuard>
           </main>
           <BottomNav />
         </AuthProvider>

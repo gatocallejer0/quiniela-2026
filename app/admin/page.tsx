@@ -21,7 +21,7 @@ export default function Admin() {
   const { session, perfil, cargando } = useAuth();
   const router = useRouter();
   const [partidos, setPartidos] = useState<Partido[]>([]);
-  const [partidosAbiertos, setPartidosAbiertos] = useState(true);
+  const [partidosAbiertos, setPartidosAbiertos] = useState(false);
   const [usuarios, setUsuarios] = useState<Perfil[]>([]);
   const [premios, setPremios] = useState<Premio[]>([]);
   const [adicionales, setAdicionales] = useState<PremioAdicional[]>([]);

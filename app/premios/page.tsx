@@ -11,6 +11,7 @@ export default function Premios() {
   const router = useRouter();
   const [premios, setPremios] = useState<Premio[]>([]);
   const [adicionales, setAdicionales] = useState<PremioAdicional[]>([]);
+  const [numJugadores, setNumJugadores] = useState(0);
   const [cargandoData, setCargandoData] = useState(true);
 
   useEffect(() => {
@@ -20,12 +21,14 @@ export default function Premios() {
   useEffect(() => {
     if (!session) return;
     (async () => {
-      const [{ data: prs }, { data: ads }] = await Promise.all([
+      const [{ data: prs }, { data: ads }, { count }] = await Promise.all([
         supabase.from("premios").select("*").order("posicion", { ascending: true }),
         supabase.from("premios_adicionales").select("*").order("id", { ascending: true }),
+        supabase.from("perfiles").select("*", { count: "exact", head: true }),
       ]);
       setPremios((prs as Premio[]) ?? []);
       setAdicionales((ads as PremioAdicional[]) ?? []);
+      setNumJugadores(count ?? 0);
       setCargandoData(false);
     })();
   }, [session]);
@@ -50,6 +53,44 @@ export default function Premios() {
         <p className="text-crema/40">Cargando...</p>
       ) : (
         <>
+          {/* Pozo calculado */}
+          {(() => {
+            const CUOTA = 100;
+            const pozo = numJugadores * CUOTA;
+            const primero = Math.round(pozo * 0.70);
+            const tercero = CUOTA;
+            const segundo = pozo - primero - tercero;
+            return (
+              <div className="mb-8 overflow-hidden rounded-xl bg-cancha-800 shadow-carta">
+                <div className="border-b border-cancha-600/30 px-6 py-5">
+                  <p className="text-xs font-mono uppercase tracking-widest text-crema/40">Pozo actual</p>
+                  <p className="mt-1 text-xs text-crema/30">{numJugadores} participante{numJugadores !== 1 ? "s" : ""} · Q{CUOTA} c/u</p>
+                </div>
+                <div className="grid grid-cols-3 divide-x divide-cancha-600/30">
+                  <div className="flex flex-col items-center p-5 text-center">
+                    <span className="mb-2 rounded-full bg-wc26-gold px-3 py-0.5 text-xs font-black text-carbon">1er lugar</span>
+                    <p className="font-mono text-2xl font-bold text-wc26-gold">Q{primero}</p>
+                    <p className="mt-1 text-[10px] text-crema/30">70% del pozo</p>
+                  </div>
+                  <div className="flex flex-col items-center p-5 text-center">
+                    <span className="mb-2 rounded-full bg-wc26-blue px-3 py-0.5 text-xs font-black text-carbon">2do lugar</span>
+                    <p className="font-mono text-2xl font-bold text-wc26-blue">Q{segundo > 0 ? segundo : "—"}</p>
+                    <p className="mt-1 text-[10px] text-crema/30">Lo que queda</p>
+                  </div>
+                  <div className="flex flex-col items-center p-5 text-center">
+                    <span className="mb-2 rounded-full bg-wc26-green px-3 py-0.5 text-xs font-black text-white">3er lugar</span>
+                    <p className="font-mono text-2xl font-bold text-wc26-green">Q{tercero}</p>
+                    <p className="mt-1 text-[10px] text-crema/30">Recupera inversión</p>
+                  </div>
+                </div>
+                <div className="border-t border-cancha-600/30 px-6 py-3 text-center">
+                  <span className="text-xs text-crema/30">Pozo total: </span>
+                  <span className="font-mono text-sm font-bold text-lima">Q{pozo}</span>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Premios por lugar */}
           {premios.length > 0 && (
             <div className="mb-8 overflow-hidden rounded-xl bg-cancha-800 shadow-carta">

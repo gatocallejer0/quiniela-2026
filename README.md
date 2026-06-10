@@ -72,3 +72,4 @@ Recarga y verás la pestaña **Admin** para cargar resultados.
   pantalla de admin para crearlos).
 - ¿PIN olvidado? Como admin puedes resetearlo desde Supabase
   (**Authentication → Users**) o crear de nuevo el perfil.
+# quiniela-2026
