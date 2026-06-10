@@ -19,12 +19,16 @@ export default function Tabla() {
   useEffect(() => {
     if (!session) return;
     (async () => {
-      const { data: tabla } = await supabase
-        .from("vista_tabla")
-        .select("*")
-        .order("puntos", { ascending: false });
-      setFilas((tabla as FilaTabla[]) ?? []);
-      setCargandoData(false);
+      try {
+        const { data: tabla } = await supabase
+          .from("vista_tabla")
+          .select("*")
+          .order("puntos", { ascending: false });
+        setFilas((tabla as FilaTabla[]) ?? []);
+      } catch (_) {
+      } finally {
+        setCargandoData(false);
+      }
     })();
   }, [session]);
 

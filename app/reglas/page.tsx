@@ -19,12 +19,16 @@ export default function Reglas() {
   useEffect(() => {
     if (!session) return;
     (async () => {
-      const { data } = await supabase
-        .from("reglas")
-        .select("*")
-        .order("orden", { ascending: true });
-      setReglas((data as Regla[]) ?? []);
-      setCargandoData(false);
+      try {
+        const { data } = await supabase
+          .from("reglas")
+          .select("*")
+          .order("orden", { ascending: true });
+        setReglas((data as Regla[]) ?? []);
+      } catch (_) {
+      } finally {
+        setCargandoData(false);
+      }
     })();
   }, [session]);
 

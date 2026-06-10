@@ -21,15 +21,19 @@ export default function Premios() {
   useEffect(() => {
     if (!session) return;
     (async () => {
-      const [{ data: prs }, { data: ads }, { count }] = await Promise.all([
-        supabase.from("premios").select("*").order("posicion", { ascending: true }),
-        supabase.from("premios_adicionales").select("*").order("id", { ascending: true }),
-        supabase.from("perfiles").select("*", { count: "exact", head: true }),
-      ]);
-      setPremios((prs as Premio[]) ?? []);
-      setAdicionales((ads as PremioAdicional[]) ?? []);
-      setNumJugadores(count ?? 0);
-      setCargandoData(false);
+      try {
+        const [{ data: prs }, { data: ads }, { count }] = await Promise.all([
+          supabase.from("premios").select("*").order("posicion", { ascending: true }),
+          supabase.from("premios_adicionales").select("*").order("id", { ascending: true }),
+          supabase.from("perfiles").select("*", { count: "exact", head: true }),
+        ]);
+        setPremios((prs as Premio[]) ?? []);
+        setAdicionales((ads as PremioAdicional[]) ?? []);
+        setNumJugadores(count ?? 0);
+      } catch (_) {
+      } finally {
+        setCargandoData(false);
+      }
     })();
   }, [session]);
 

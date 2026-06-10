@@ -70,19 +70,19 @@ export default function Partidos() {
   useEffect(() => {
     if (!session) return;
     (async () => {
-      const { data: ps } = await supabase
-        .from("partidos")
-        .select("*")
-        .order("inicio", { ascending: true });
-      const { data: prs } = await supabase
-        .from("pronosticos")
-        .select("*")
-        .eq("usuario_id", session.user.id);
-      setPartidos((ps as Partido[]) ?? []);
-      const mapa: Record<number, Pronostico> = {};
-      (prs as Pronostico[] | null)?.forEach((p) => (mapa[p.partido_id] = p));
-      setPronos(mapa);
-      setCargandoData(false);
+      try {
+        const [{ data: ps }, { data: prs }] = await Promise.all([
+          supabase.from("partidos").select("*").order("inicio", { ascending: true }),
+          supabase.from("pronosticos").select("*").eq("usuario_id", session.user.id),
+        ]);
+        setPartidos((ps as Partido[]) ?? []);
+        const mapa: Record<number, Pronostico> = {};
+        (prs as Pronostico[] | null)?.forEach((p) => (mapa[p.partido_id] = p));
+        setPronos(mapa);
+      } catch (_) {
+      } finally {
+        setCargandoData(false);
+      }
     })();
   }, [session]);
 
