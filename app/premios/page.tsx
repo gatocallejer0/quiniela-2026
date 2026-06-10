@@ -64,32 +64,33 @@ export default function Premios() {
             const primero = Math.round(pozo * 0.70);
             const tercero = CUOTA;
             const segundo = pozo - primero - tercero;
+            const filas = [
+              { label: "1er lugar", color: "bg-wc26-gold text-carbon", desc: "70% del pozo", monto: `Q${primero}`, montoColor: "text-wc26-gold" },
+              { label: "2do lugar", color: "bg-wc26-blue text-carbon", desc: "Lo que queda", monto: segundo > 0 ? `Q${segundo}` : "—", montoColor: "text-wc26-blue" },
+              { label: "3er lugar", color: "bg-wc26-green text-white", desc: "Recupera inversión", monto: `Q${tercero}`, montoColor: "text-wc26-green" },
+            ];
             return (
               <div className="mb-8 overflow-hidden rounded-xl bg-cancha-800 shadow-carta">
-                <div className="border-b border-cancha-600/30 px-6 py-5">
-                  <p className="text-xs font-mono uppercase tracking-widest text-crema/40">Pozo actual</p>
-                  <p className="mt-1 text-xs text-crema/30">{numJugadores} participante{numJugadores !== 1 ? "s" : ""} · Q{CUOTA} c/u</p>
-                </div>
-                <div className="grid grid-cols-3 divide-x divide-cancha-600/30">
-                  <div className="flex flex-col items-center p-5 text-center">
-                    <span className="mb-2 rounded-full bg-wc26-gold px-3 py-0.5 text-xs font-black text-carbon">1er lugar</span>
-                    <p className="font-mono text-2xl font-bold text-wc26-gold">Q{primero}</p>
-                    <p className="mt-1 text-[10px] text-crema/30">70% del pozo</p>
+                <div className="flex items-center justify-between border-b border-cancha-600/30 px-6 py-5">
+                  <div>
+                    <p className="text-xs font-mono uppercase tracking-widest text-crema/40">Pozo actual</p>
+                    <p className="mt-1 text-xs text-crema/30">{numJugadores} participante{numJugadores !== 1 ? "s" : ""} · Q{CUOTA} c/u</p>
                   </div>
-                  <div className="flex flex-col items-center p-5 text-center">
-                    <span className="mb-2 rounded-full bg-wc26-blue px-3 py-0.5 text-xs font-black text-carbon">2do lugar</span>
-                    <p className="font-mono text-2xl font-bold text-wc26-blue">Q{segundo > 0 ? segundo : "—"}</p>
-                    <p className="mt-1 text-[10px] text-crema/30">Lo que queda</p>
-                  </div>
-                  <div className="flex flex-col items-center p-5 text-center">
-                    <span className="mb-2 rounded-full bg-wc26-green px-3 py-0.5 text-xs font-black text-white">3er lugar</span>
-                    <p className="font-mono text-2xl font-bold text-wc26-green">Q{tercero}</p>
-                    <p className="mt-1 text-[10px] text-crema/30">Recupera inversión</p>
+                  <div>
+                    <p className="text-xs text-crema/30 text-right">Total</p>
+                    <p className="font-mono text-lg font-bold text-lima">Q{pozo}</p>
                   </div>
                 </div>
-                <div className="border-t border-cancha-600/30 px-6 py-3 text-center">
-                  <span className="text-xs text-crema/30">Pozo total: </span>
-                  <span className="font-mono text-sm font-bold text-lima">Q{pozo}</span>
+                <div className="divide-y divide-cancha-600/30">
+                  {filas.map((f) => (
+                    <div key={f.label} className="flex items-center gap-4 px-6 py-4">
+                      <span className={`w-20 shrink-0 rounded-full px-3 py-0.5 text-center text-xs font-black ${f.color}`}>
+                        {f.label}
+                      </span>
+                      <span className="flex-1 text-sm text-crema/60">{f.desc}</span>
+                      <span className={`font-mono text-lg font-bold ${f.montoColor}`}>{f.monto}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
@@ -108,13 +109,11 @@ export default function Premios() {
               </div>
               <div className="divide-y divide-cancha-600/30">
                 {premios.map((pr) => (
-                  <div key={pr.id} className="flex items-center justify-between px-6 py-4 hover:bg-cancha-700/40 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <span className={`rounded-full px-3 py-0.5 text-xs font-black ${posicionColor(pr.posicion)}`}>
-                        {posicionLabel(pr.posicion)}
-                      </span>
-                      <span className="text-sm font-semibold text-crema">{pr.descripcion}</span>
-                    </div>
+                  <div key={pr.id} className="flex items-center gap-4 px-6 py-4">
+                    <span className={`w-20 shrink-0 rounded-full px-3 py-0.5 text-center text-xs font-black ${posicionColor(pr.posicion)}`}>
+                      {posicionLabel(pr.posicion)}
+                    </span>
+                    <span className="flex-1 text-sm font-semibold text-crema">{pr.descripcion}</span>
                     {pr.valor && (
                       <span className="font-mono text-sm font-bold text-lima">{pr.valor}</span>
                     )}
@@ -133,11 +132,9 @@ export default function Premios() {
               </div>
               <div className="divide-y divide-cancha-600/30">
                 {adicionales.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between px-6 py-4 hover:bg-cancha-700/40 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <span className="text-crema/30">·</span>
-                      <span className="text-sm font-semibold text-crema">{a.descripcion}</span>
-                    </div>
+                  <div key={a.id} className="flex items-center gap-4 px-6 py-4">
+                    <span className="w-2 h-2 shrink-0 rounded-full bg-crema/20" />
+                    <span className="flex-1 text-sm font-semibold text-crema">{a.descripcion}</span>
                     {a.valor && (
                       <span className="font-mono text-sm font-bold text-lima">{a.valor}</span>
                     )}
