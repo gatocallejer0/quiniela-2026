@@ -37,26 +37,30 @@ export default function Tabla() {
   const posicionChip = (i: number) => {
     if (i === 0)
       return (
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-wc26-gold text-xs font-black text-carbon">
-          1
-        </span>
+        <div className="flex w-10 shrink-0 flex-col items-center">
+          <span className="text-2xl leading-none">🥇</span>
+          <span className="text-[10px] font-black text-wc26-gold">1</span>
+        </div>
       );
     if (i === 1)
       return (
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-wc26-blue text-xs font-black text-carbon">
-          2
-        </span>
+        <div className="flex w-10 shrink-0 flex-col items-center">
+          <span className="text-2xl leading-none">🥈</span>
+          <span className="text-[10px] font-black text-wc26-blue">2</span>
+        </div>
       );
     if (i === 2)
       return (
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-wc26-green text-xs font-black text-white">
-          3
-        </span>
+        <div className="flex w-10 shrink-0 flex-col items-center">
+          <span className="text-2xl leading-none">🥉</span>
+          <span className="text-[10px] font-black text-wc26-green">3</span>
+        </div>
       );
     return (
-      <span className="flex h-8 w-8 items-center justify-center text-sm font-semibold text-crema/40">
-        {i + 1}
-      </span>
+      <div className="flex w-10 shrink-0 flex-col items-center">
+        <span className="text-2xl leading-none">⚽</span>
+        <span className="text-[10px] font-semibold text-crema/40">{i + 1}</span>
+      </div>
     );
   };
 
