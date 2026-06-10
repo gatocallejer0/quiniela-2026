@@ -60,6 +60,8 @@ export default function Partidos() {
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [pronos, setPronos] = useState<Record<number, Pronostico>>({});
   const [cargandoData, setCargandoData] = useState(true);
+  const [filtroEquipo, setFiltroEquipo] = useState("");
+  const [filtroFecha, setFiltroFecha] = useState("");
 
   useEffect(() => {
     if (!cargando && !session) router.replace("/");
@@ -91,6 +93,23 @@ export default function Partidos() {
   const exactos    = finalizados.filter((p) => puntosDe(p, pronos[p.id]) === 3).length;
   const resultados = finalizados.filter((p) => puntosDe(p, pronos[p.id]) === 1).length;
   const fallidos   = finalizados.length - exactos - resultados;
+
+  const fechaGT = (iso: string) =>
+    new Intl.DateTimeFormat("es-GT", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" })
+      .format(new Date(iso));
+
+  const fechaLabel = (iso: string) =>
+    new Intl.DateTimeFormat("es-GT", { timeZone: TZ, weekday: "short", day: "2-digit", month: "short" })
+      .format(new Date(iso));
+
+  const equipos = [...new Set(partidos.flatMap((p) => [p.equipo_local, p.equipo_visitante]))].sort();
+  const fechas  = [...new Map(partidos.map((p) => [fechaGT(p.inicio), p.inicio])).entries()];
+
+  const partidosFiltrados = partidos.filter((p) => {
+    if (filtroEquipo && p.equipo_local !== filtroEquipo && p.equipo_visitante !== filtroEquipo) return false;
+    if (filtroFecha && fechaGT(p.inicio) !== filtroFecha) return false;
+    return true;
+  });
 
   return (
     <div className="aparece">
@@ -145,6 +164,40 @@ export default function Partidos() {
         </div>
       )}
 
+      {/* Filtros */}
+      {!cargandoData && partidos.length > 0 && (
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+          <select
+            value={filtroEquipo}
+            onChange={(e) => setFiltroEquipo(e.target.value)}
+            className="flex-1 rounded-xl border border-cancha-600 bg-cancha-800 px-4 py-2.5 text-sm text-crema outline-none focus:border-lima"
+          >
+            <option value="">Todos los países</option>
+            {equipos.map((eq) => (
+              <option key={eq} value={eq}>{bandera(eq)} {eq}</option>
+            ))}
+          </select>
+          <select
+            value={filtroFecha}
+            onChange={(e) => setFiltroFecha(e.target.value)}
+            className="flex-1 rounded-xl border border-cancha-600 bg-cancha-800 px-4 py-2.5 text-sm text-crema outline-none focus:border-lima"
+          >
+            <option value="">Todas las fechas</option>
+            {fechas.map(([fecha, iso]) => (
+              <option key={fecha} value={fecha}>{fechaLabel(iso)}</option>
+            ))}
+          </select>
+          {(filtroEquipo || filtroFecha) && (
+            <button
+              onClick={() => { setFiltroEquipo(""); setFiltroFecha(""); }}
+              className="rounded-xl border border-cancha-600 px-4 py-2.5 text-sm text-crema/50 hover:text-crema transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
+
       {cargandoData ? (
         <p className="text-crema/40">Cargando partidos...</p>
       ) : partidos.length === 0 ? (
@@ -153,15 +206,19 @@ export default function Partidos() {
         </p>
       ) : (
         <div className="space-y-3">
-          {partidos.map((p) => (
-            <CartaPartido
-              key={p.id}
-              partido={p}
-              prono={pronos[p.id]}
-              usuarioId={session.user.id}
-              onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
-            />
-          ))}
+          {partidosFiltrados.length === 0 ? (
+            <p className="py-8 text-center text-crema/40">No hay partidos con ese filtro.</p>
+          ) : (
+            partidosFiltrados.map((p) => (
+              <CartaPartido
+                key={p.id}
+                partido={p}
+                prono={pronos[p.id]}
+                usuarioId={session.user.id}
+                onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
+              />
+            ))
+          )}
         </div>
       )}
     </div>
