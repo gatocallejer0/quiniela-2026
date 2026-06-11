@@ -880,8 +880,8 @@ function FilaAdmin({ partido, usuarios, conProno }: {
         </div>
       </div>
 
-      {/* Participación — solo si el partido ya está bloqueado */}
-      {bloqueado && usuarios.length > 0 && (
+      {/* Participación */}
+      {usuarios.length > 0 && (
         <div className="mt-2 border-t border-cancha-600/30 pt-2">
           <button
             onClick={() => setVerParticipacion((v) => !v)}
