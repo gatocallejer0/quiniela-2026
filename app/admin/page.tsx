@@ -23,6 +23,7 @@ export default function Admin() {
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [partidosAbiertos, setPartidosAbiertos] = useState(false);
   const [usuarios, setUsuarios] = useState<Perfil[]>([]);
+  const [pronosticosPorPartido, setPronosticosPorPartido] = useState<Record<number, Set<string>>>({});
   const [premios, setPremios] = useState<Premio[]>([]);
   const [adicionales, setAdicionales] = useState<PremioAdicional[]>([]);
   const [reglas, setReglas] = useState<Regla[]>([]);
@@ -35,15 +36,23 @@ export default function Admin() {
   useEffect(() => {
     if (!perfil?.es_admin) return;
     (async () => {
-      const [{ data: ps }, { data: us }, { data: prs }, { data: ads }, { data: rgs }] = await Promise.all([
+      const [{ data: ps }, { data: us }, { data: pronos }, { data: prs }, { data: ads }, { data: rgs }] = await Promise.all([
         supabase.from("partidos").select("*").order("inicio", { ascending: true }),
         supabase.from("perfiles").select("*").order("nombre", { ascending: true }),
+        supabase.from("pronosticos").select("usuario_id, partido_id"),
         supabase.from("premios").select("*").order("posicion", { ascending: true }),
         supabase.from("premios_adicionales").select("*").order("id", { ascending: true }),
         supabase.from("reglas").select("*").order("orden", { ascending: true }),
       ]);
       setPartidos((ps as Partido[]) ?? []);
       setUsuarios((us as Perfil[]) ?? []);
+      // Mapa: partido_id -> Set de usuario_ids que ya pusieron pronóstico
+      const mapa: Record<number, Set<string>> = {};
+      (pronos as { usuario_id: string; partido_id: number }[] | null)?.forEach(({ usuario_id, partido_id }) => {
+        if (!mapa[partido_id]) mapa[partido_id] = new Set();
+        mapa[partido_id].add(usuario_id);
+      });
+      setPronosticosPorPartido(mapa);
       setPremios((prs as Premio[]) ?? []);
       setAdicionales((ads as PremioAdicional[]) ?? []);
       setReglas((rgs as Regla[]) ?? []);
@@ -86,7 +95,12 @@ export default function Admin() {
             ) : (
               <div className="space-y-2">
                 {partidos.map((p) => (
-                  <FilaAdmin key={p.id} partido={p} />
+                  <FilaAdmin
+                    key={p.id}
+                    partido={p}
+                    usuarios={usuarios}
+                    conProno={pronosticosPorPartido[p.id] ?? new Set()}
+                  />
                 ))}
               </div>
             )}
@@ -784,7 +798,11 @@ function FormNuevaRegla({ onAgregada }: { onAgregada: (r: Regla) => void }) {
 
 // Resultados
 
-function FilaAdmin({ partido }: { partido: Partido }) {
+function FilaAdmin({ partido, usuarios, conProno }: {
+  partido: Partido;
+  usuarios: Perfil[];
+  conProno: Set<string>;
+}) {
   const [gl, setGl] = useState(
     partido.goles_local_final != null ? String(partido.goles_local_final) : ""
   );
@@ -795,6 +813,11 @@ function FilaAdmin({ partido }: { partido: Partido }) {
   );
   const [fin, setFin] = useState(partido.finalizado);
   const [msg, setMsg] = useState("");
+  const [verParticipacion, setVerParticipacion] = useState(false);
+
+  const bloqueado = new Date(partido.inicio).getTime() - 10 * 60 * 1000 <= Date.now();
+  const sinProno = usuarios.filter((u) => !conProno.has(u.id));
+  const conPronoLista = usuarios.filter((u) => conProno.has(u.id));
 
   async function guardar() {
     setMsg("...");
@@ -856,6 +879,39 @@ function FilaAdmin({ partido }: { partido: Partido }) {
           </button>
         </div>
       </div>
+
+      {/* Participación — solo si el partido ya está bloqueado */}
+      {bloqueado && usuarios.length > 0 && (
+        <div className="mt-2 border-t border-cancha-600/30 pt-2">
+          <button
+            onClick={() => setVerParticipacion((v) => !v)}
+            className="flex w-full items-center justify-between text-xs text-crema/40 hover:text-crema/70 transition-colors"
+          >
+            <span>
+              Participación · <span className="text-lima">{conPronoLista.length} pusieron</span>
+              {sinProno.length > 0 && <span className="text-wc26-red"> · {sinProno.length} faltaron</span>}
+            </span>
+            <span className="material-symbols-outlined text-base transition-transform duration-200" style={{ transform: verParticipacion ? "rotate(0deg)" : "rotate(-90deg)" }}>
+              expand_more
+            </span>
+          </button>
+
+          {verParticipacion && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {conPronoLista.map((u) => (
+                <span key={u.id} className="flex items-center gap-1 rounded-full bg-lima/10 px-2.5 py-0.5 text-xs font-semibold text-lima">
+                  ✓ {u.nombre}
+                </span>
+              ))}
+              {sinProno.map((u) => (
+                <span key={u.id} className="flex items-center gap-1 rounded-full bg-wc26-red/10 px-2.5 py-0.5 text-xs font-semibold text-wc26-red">
+                  ✗ {u.nombre}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
