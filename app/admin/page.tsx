@@ -108,6 +108,28 @@ export default function Admin() {
         )}
       </section>
 
+      {/* Participación */}
+      <section>
+        <h2 className="font-display mb-1 text-5xl text-lima uppercase">Participación</h2>
+        <p className="mb-6 text-sm text-crema/50">
+          Quién ya puso su marcador · para avisar por WhatsApp.
+        </p>
+        {cargandoData ? (
+          <p className="text-crema/50">Cargando&hellip;</p>
+        ) : (
+          <div className="space-y-2">
+            {partidos.map((p) => (
+              <FilaParticipacion
+                key={p.id}
+                partido={p}
+                usuarios={usuarios}
+                conProno={pronosticosPorPartido[p.id] ?? new Set()}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Usuarios */}
       <section>
         <h2 className="font-display mb-1 text-5xl text-lima uppercase">Usuarios</h2>
@@ -796,6 +818,61 @@ function FormNuevaRegla({ onAgregada }: { onAgregada: (r: Regla) => void }) {
   );
 }
 
+// Participación
+
+function FilaParticipacion({ partido, usuarios, conProno }: {
+  partido: Partido;
+  usuarios: Perfil[];
+  conProno: Set<string>;
+}) {
+  const [ver, setVer] = useState(false);
+  const sinProno = usuarios.filter((u) => !conProno.has(u.id));
+  const conPronoLista = usuarios.filter((u) => conProno.has(u.id));
+  const bloqueado = new Date(partido.inicio).getTime() - 10 * 60 * 1000 <= Date.now();
+
+  return (
+    <div className="rounded-xl border border-cancha-600/40 bg-cancha-800 p-3">
+      <button
+        onClick={() => setVer((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] text-crema/30">{fmt(partido.inicio)}{bloqueado && <span className="ml-2 text-wc26-red/70">bloqueado</span>}</p>
+          <p className="truncate text-sm font-semibold text-crema">
+            {partido.equipo_local} vs {partido.equipo_visitante}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-xs text-lima font-semibold">{conPronoLista.length}/{usuarios.length}</span>
+          {sinProno.length > 0 && (
+            <span className="rounded-full bg-wc26-red/10 px-2 py-0.5 text-[10px] font-bold text-wc26-red">
+              {sinProno.length} falta{sinProno.length !== 1 ? "n" : ""}
+            </span>
+          )}
+          <span className="material-symbols-outlined text-base text-crema/30 transition-transform duration-200" style={{ transform: ver ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </div>
+      </button>
+
+      {ver && (
+        <div className="mt-2 border-t border-cancha-600/30 pt-2 flex flex-wrap gap-1.5">
+          {conPronoLista.map((u) => (
+            <span key={u.id} className="flex items-center gap-1 rounded-full bg-lima/10 px-2.5 py-0.5 text-xs font-semibold text-lima">
+              ✓ {u.nombre}
+            </span>
+          ))}
+          {sinProno.map((u) => (
+            <span key={u.id} className="flex items-center gap-1 rounded-full bg-wc26-red/10 px-2.5 py-0.5 text-xs font-semibold text-wc26-red">
+              ✗ {u.nombre}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Resultados
 
 function FilaAdmin({ partido, usuarios, conProno }: {
@@ -813,12 +890,6 @@ function FilaAdmin({ partido, usuarios, conProno }: {
   );
   const [fin, setFin] = useState(partido.finalizado);
   const [msg, setMsg] = useState("");
-  const [verParticipacion, setVerParticipacion] = useState(false);
-
-  const bloqueado = new Date(partido.inicio).getTime() - 10 * 60 * 1000 <= Date.now();
-  const sinProno = usuarios.filter((u) => !conProno.has(u.id));
-  const conPronoLista = usuarios.filter((u) => conProno.has(u.id));
-
   async function guardar() {
     setMsg("...");
     const { error } = await supabase
@@ -880,38 +951,6 @@ function FilaAdmin({ partido, usuarios, conProno }: {
         </div>
       </div>
 
-      {/* Participación */}
-      {usuarios.length > 0 && (
-        <div className="mt-2 border-t border-cancha-600/30 pt-2">
-          <button
-            onClick={() => setVerParticipacion((v) => !v)}
-            className="flex w-full items-center justify-between text-xs text-crema/40 hover:text-crema/70 transition-colors"
-          >
-            <span>
-              Participación · <span className="text-lima">{conPronoLista.length} pusieron</span>
-              {sinProno.length > 0 && <span className="text-wc26-red"> · {sinProno.length} faltaron</span>}
-            </span>
-            <span className="material-symbols-outlined text-base transition-transform duration-200" style={{ transform: verParticipacion ? "rotate(0deg)" : "rotate(-90deg)" }}>
-              expand_more
-            </span>
-          </button>
-
-          {verParticipacion && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {conPronoLista.map((u) => (
-                <span key={u.id} className="flex items-center gap-1 rounded-full bg-lima/10 px-2.5 py-0.5 text-xs font-semibold text-lima">
-                  ✓ {u.nombre}
-                </span>
-              ))}
-              {sinProno.map((u) => (
-                <span key={u.id} className="flex items-center gap-1 rounded-full bg-wc26-red/10 px-2.5 py-0.5 text-xs font-semibold text-wc26-red">
-                  ✗ {u.nombre}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
