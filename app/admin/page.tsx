@@ -28,6 +28,7 @@ export default function Admin() {
   const [adicionales, setAdicionales] = useState<PremioAdicional[]>([]);
   const [reglas, setReglas] = useState<Regla[]>([]);
   const [cargandoData, setCargandoData] = useState(true);
+  const [pasadosAbiertos, setPasadosAbiertos] = useState(false);
 
   useEffect(() => {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
@@ -116,18 +117,58 @@ export default function Admin() {
         </p>
         {cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
-        ) : (
-          <div className="space-y-2">
-            {partidos.map((p) => (
-              <FilaParticipacion
-                key={p.id}
-                partido={p}
-                usuarios={usuarios}
-                conProno={pronosticosPorPartido[p.id] ?? new Set()}
-              />
-            ))}
-          </div>
-        )}
+        ) : (() => {
+          const ahora = Date.now();
+          const pasados = partidos.filter((p) => new Date(p.inicio).getTime() < ahora);
+          const proximos = partidos.filter((p) => new Date(p.inicio).getTime() >= ahora);
+          return (
+            <div className="space-y-2">
+              {/* Partidos pasados colapsados */}
+              {pasados.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setPasadosAbiertos((v) => !v)}
+                    className="mb-2 flex w-full items-center justify-between gap-2 rounded-xl border border-cancha-600/30 bg-cancha-800/50 px-4 py-2.5 text-left"
+                  >
+                    <span className="text-xs font-semibold text-crema/40">
+                      {pasados.length} partido{pasados.length !== 1 ? "s" : ""} anterior{pasados.length !== 1 ? "es" : ""}
+                    </span>
+                    <span
+                      className="material-symbols-outlined text-base text-crema/30 transition-transform duration-200"
+                      style={{ transform: pasadosAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}
+                    >
+                      expand_more
+                    </span>
+                  </button>
+                  {pasadosAbiertos && (
+                    <div className="space-y-2">
+                      {pasados.map((p) => (
+                        <FilaParticipacion
+                          key={p.id}
+                          partido={p}
+                          usuarios={usuarios}
+                          conProno={pronosticosPorPartido[p.id] ?? new Set()}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Partidos actuales y próximos */}
+              {proximos.map((p) => (
+                <FilaParticipacion
+                  key={p.id}
+                  partido={p}
+                  usuarios={usuarios}
+                  conProno={pronosticosPorPartido[p.id] ?? new Set()}
+                />
+              ))}
+              {proximos.length === 0 && pasados.length === 0 && (
+                <p className="text-crema/40">Sin partidos.</p>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {/* Usuarios */}
