@@ -31,6 +31,11 @@ export default function Admin() {
   const [pasadosAbiertos, setPasadosAbiertos] = useState(false);
   const [finalizadosAdminAbiertos, setFinalizadosAdminAbiertos] = useState(false);
   const [puntosAd, setPuntosAd] = useState<Record<string, number>>({});
+  const [participacionAbierta, setParticipacionAbierta] = useState(false);
+  const [usuariosAbiertos, setUsuariosAbiertos] = useState(false);
+  const [puntosAdAbiertos, setPuntosAdAbiertos] = useState(false);
+  const [reglasAbiertos, setReglasAbiertos] = useState(false);
+  const [premiosAbiertos, setPremiosAbiertos] = useState(false);
 
   useEffect(() => {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
@@ -153,11 +158,16 @@ export default function Admin() {
 
       {/* Participación */}
       <section>
-        <h2 className="font-display mb-1 text-5xl text-lima uppercase">Participación</h2>
-        <p className="mb-6 text-sm text-crema/50">
-          Quién ya puso su marcador · para avisar por WhatsApp.
-        </p>
-        {cargandoData ? (
+        <button
+          onClick={() => setParticipacionAbierta((v) => !v)}
+          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
+        >
+          <h2 className="font-display text-5xl text-lima uppercase">Participación</h2>
+          <span className="material-symbols-outlined text-3xl text-lima/50 transition-transform duration-200" style={{ transform: participacionAbierta ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </button>
+        {participacionAbierta && (cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
         ) : (() => {
           const pasados = partidos.filter((p) => p.finalizado);
@@ -209,16 +219,21 @@ export default function Admin() {
               )}
             </div>
           );
-        })()}
+        })())}
       </section>
 
       {/* Usuarios */}
       <section>
-        <h2 className="font-display mb-1 text-5xl text-lima uppercase">Usuarios</h2>
-        <p className="mb-6 text-sm text-crema/50">
-          Marca qui&eacute;n ya pag&oacute; su quiniela.
-        </p>
-        {cargandoData ? (
+        <button
+          onClick={() => setUsuariosAbiertos((v) => !v)}
+          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
+        >
+          <h2 className="font-display text-5xl text-lima uppercase">Usuarios</h2>
+          <span className="material-symbols-outlined text-3xl text-lima/50 transition-transform duration-200" style={{ transform: usuariosAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </button>
+        {usuariosAbiertos && (cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
         ) : (
           <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
@@ -238,16 +253,21 @@ export default function Admin() {
               <p className="px-6 py-8 text-center text-crema/40">Sin usuarios.</p>
             )}
           </div>
-        )}
+        ))}
       </section>
 
       {/* Puntos adicionales */}
       <section>
-        <h2 className="font-display mb-1 text-5xl text-lima uppercase">Puntos adicionales</h2>
-        <p className="mb-6 text-sm text-crema/50">
-          Suma o resta puntos por actividades extra.
-        </p>
-        {cargandoData ? (
+        <button
+          onClick={() => setPuntosAdAbiertos((v) => !v)}
+          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
+        >
+          <h2 className="font-display text-5xl text-lima uppercase">Puntos adicionales</h2>
+          <span className="material-symbols-outlined text-3xl text-lima/50 transition-transform duration-200" style={{ transform: puntosAdAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </button>
+        {puntosAdAbiertos && (cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
         ) : (
           <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
@@ -270,18 +290,21 @@ export default function Admin() {
               <p className="px-6 py-8 text-center text-crema/40">Sin usuarios.</p>
             )}
           </div>
-        )}
+        ))}
       </section>
 
       {/* Reglas */}
       <section>
-        <div className="mb-1 flex items-center gap-3">
+        <button
+          onClick={() => setReglasAbiertos((v) => !v)}
+          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
+        >
           <h2 className="font-display text-5xl text-lima uppercase">Reglas</h2>
-        </div>
-        <p className="mb-6 text-sm text-crema/50">
-          Define las reglas de la quiniela. Solo informativo, no afecta la l&oacute;gica.
-        </p>
-        {cargandoData ? (
+          <span className="material-symbols-outlined text-3xl text-lima/50 transition-transform duration-200" style={{ transform: reglasAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </button>
+        {reglasAbiertos && (cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
         ) : (
           <div className="space-y-2">
@@ -307,23 +330,28 @@ export default function Admin() {
               }
             />
           </div>
-        )}
+        ))}
       </section>
 
       {/* Premios */}
       <section>
-        <div className="mb-1 flex items-center gap-3">
-          <h2 className="font-display text-5xl text-lima uppercase">Premios</h2>
-          <div className="flex overflow-hidden rounded-full" style={{ width: 72 }}>
-            <div className="h-1 flex-1 bg-wc26-gold" />
-            <div className="h-1 flex-1 bg-wc26-blue" />
-            <div className="h-1 flex-1 bg-wc26-green" />
+        <button
+          onClick={() => setPremiosAbiertos((v) => !v)}
+          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
+        >
+          <div className="flex items-center gap-3">
+            <h2 className="font-display text-5xl text-lima uppercase">Premios</h2>
+            <div className="flex overflow-hidden rounded-full" style={{ width: 72 }}>
+              <div className="h-1 flex-1 bg-wc26-gold" />
+              <div className="h-1 flex-1 bg-wc26-blue" />
+              <div className="h-1 flex-1 bg-wc26-green" />
+            </div>
           </div>
-        </div>
-        <p className="mb-6 text-sm text-crema/50">
-          Define qu&eacute; gana cada posici&oacute;n. Los participantes podr&aacute;n verlos en la tabla.
-        </p>
-        {cargandoData ? (
+          <span className="material-symbols-outlined text-3xl text-lima/50 transition-transform duration-200" style={{ transform: premiosAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </button>
+        {premiosAbiertos && (cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
         ) : (
           <div className="space-y-2">
@@ -383,7 +411,7 @@ export default function Admin() {
               </div>
             </div>
           </div>
-        )}
+        ))}
       </section>
     </div>
   );
