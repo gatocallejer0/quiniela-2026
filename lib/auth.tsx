@@ -28,14 +28,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [cargando, setCargando] = useState(true);
 
   async function cargarPerfil(userId: string) {
-    const { data } = await supabase
-      .from("perfiles")
-      .select("id, nombre, es_admin")
-      .eq("id", userId)
-      .single();
-    setPerfil((data as Perfil) ?? null);
+    try {
+      const { data } = await supabase
+        .from("perfiles")
+        .select("id, nombre, es_admin, pagado")
+        .eq("id", userId)
+        .single();
+      setPerfil((data as Perfil) ?? null);
+    } catch (err) {
+      console.error("cargarPerfil falló:", err);
+    }
   }
 
+  // Inicializa la sesión y registra el listener de cambios de auth.
+  // El callback de onAuthStateChange es SÍNCRONO a propósito: llamar a
+  // supabase.from() dentro del callback retiene el Web Lock de auth en
+  // supabase-js v2 y congela todas las queries posteriores indefinidamente.
   useEffect(() => {
     const timeout = setTimeout(() => setCargando(false), 5000);
 
@@ -44,14 +52,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.session) await cargarPerfil(data.session.user.id);
     }).catch(() => {}).finally(() => { clearTimeout(timeout); setCargando(false); });
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
-      if (s) await cargarPerfil(s.user.id).catch(() => {});
-      else setPerfil(null);
+      if (!s) setPerfil(null);
       setCargando(false);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Carga el perfil cada vez que cambia la sesión.
+  // Separado del listener para no hacer queries de Supabase dentro del Web Lock.
+  useEffect(() => {
+    if (session) cargarPerfil(session.user.id);
+  }, [session]);
 
   async function registrar(nombre: string, pin: string) {
     const email = nombreAEmail(nombre);
