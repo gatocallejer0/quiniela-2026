@@ -283,7 +283,8 @@ export default function Admin() {
                   setPuntosAd((prev) => ({ ...prev, [u.id]: nuevos }));
                   supabase.from("puntos_adicionales")
                     .upsert({ usuario_id: u.id, puntos: nuevos }, { onConflict: "usuario_id" })
-                    .then(({ error }) => { if (error) console.error("upsert puntos_adicionales:", error); });
+                    .select()
+                    .then(({ data, error }) => { console.log("upsert puntos_adicionales:", { data, error }); });
                 }}
               />
             ))}
