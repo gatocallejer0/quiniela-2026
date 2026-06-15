@@ -62,6 +62,7 @@ export default function Partidos() {
   const [cargandoData, setCargandoData] = useState(true);
   const [filtroEquipo, setFiltroEquipo] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("");
+  const [pasadosAbiertos, setPasadosAbiertos] = useState(false);
 
   useEffect(() => {
     if (!cargando && !session) router.replace("/");
@@ -220,23 +221,63 @@ export default function Partidos() {
         <p className="text-crema/40">
           Aun no hay partidos cargados. (El admin debe cargar el calendario.)
         </p>
-      ) : (
-        <div className="space-y-3">
-          {partidosFiltrados.length === 0 ? (
-            <p className="py-8 text-center text-crema/40">No hay partidos con ese filtro.</p>
-          ) : (
-            partidosFiltrados.map((p) => (
-              <CartaPartido
-                key={p.id}
-                partido={p}
-                prono={pronos[p.id]}
-                usuarioId={session.user.id}
-                onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
-              />
-            ))
-          )}
-        </div>
-      )}
+      ) : (() => {
+        const ahora = Date.now();
+        const pasados = partidosFiltrados.filter((p) => new Date(p.inicio).getTime() < ahora);
+        const proximos = partidosFiltrados.filter((p) => new Date(p.inicio).getTime() >= ahora);
+        return (
+          <div className="space-y-3">
+            {partidosFiltrados.length === 0 ? (
+              <p className="py-8 text-center text-crema/40">No hay partidos con ese filtro.</p>
+            ) : (
+              <>
+                {/* Partidos pasados colapsados */}
+                {pasados.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => setPasadosAbiertos((v) => !v)}
+                      className="mb-3 flex w-full items-center justify-between gap-2 rounded-xl border border-cancha-600/30 bg-cancha-800/50 px-4 py-2.5 text-left"
+                    >
+                      <span className="text-xs font-semibold text-crema/40">
+                        {pasados.length} partido{pasados.length !== 1 ? "s" : ""} anterior{pasados.length !== 1 ? "es" : ""}
+                      </span>
+                      <span
+                        className="material-symbols-outlined text-base text-crema/30 transition-transform duration-200"
+                        style={{ transform: pasadosAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}
+                      >
+                        expand_more
+                      </span>
+                    </button>
+                    {pasadosAbiertos && (
+                      <div className="space-y-3 mb-3">
+                        {pasados.map((p) => (
+                          <CartaPartido
+                            key={p.id}
+                            partido={p}
+                            prono={pronos[p.id]}
+                            usuarioId={session.user.id}
+                            onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Partidos actuales y próximos */}
+                {proximos.map((p) => (
+                  <CartaPartido
+                    key={p.id}
+                    partido={p}
+                    prono={pronos[p.id]}
+                    usuarioId={session.user.id}
+                    onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
