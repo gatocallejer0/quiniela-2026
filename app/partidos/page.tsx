@@ -222,9 +222,8 @@ export default function Partidos() {
           Aun no hay partidos cargados. (El admin debe cargar el calendario.)
         </p>
       ) : (() => {
-        const ahora = Date.now();
-        const pasados = partidosFiltrados.filter((p) => new Date(p.inicio).getTime() < ahora);
-        const proximos = partidosFiltrados.filter((p) => new Date(p.inicio).getTime() >= ahora);
+        const pasados = partidosFiltrados.filter((p) => p.finalizado);
+        const proximos = partidosFiltrados.filter((p) => !p.finalizado);
         return (
           <div className="space-y-3">
             {partidosFiltrados.length === 0 ? (

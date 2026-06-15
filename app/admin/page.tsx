@@ -118,9 +118,8 @@ export default function Admin() {
         {cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
         ) : (() => {
-          const ahora = Date.now();
-          const pasados = partidos.filter((p) => new Date(p.inicio).getTime() < ahora);
-          const proximos = partidos.filter((p) => new Date(p.inicio).getTime() >= ahora);
+          const pasados = partidos.filter((p) => p.finalizado);
+          const proximos = partidos.filter((p) => !p.finalizado);
           return (
             <div className="space-y-2">
               {/* Partidos pasados colapsados */}
