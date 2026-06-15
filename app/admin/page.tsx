@@ -29,6 +29,7 @@ export default function Admin() {
   const [reglas, setReglas] = useState<Regla[]>([]);
   const [cargandoData, setCargandoData] = useState(true);
   const [pasadosAbiertos, setPasadosAbiertos] = useState(false);
+  const [finalizadosAdminAbiertos, setFinalizadosAdminAbiertos] = useState(false);
 
   useEffect(() => {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
@@ -93,18 +94,54 @@ export default function Admin() {
             </p>
             {cargandoData ? (
               <p className="text-crema/50">Cargando&hellip;</p>
-            ) : (
-              <div className="space-y-2">
-                {partidos.map((p) => (
-                  <FilaAdmin
-                    key={p.id}
-                    partido={p}
-                    usuarios={usuarios}
-                    conProno={pronosticosPorPartido[p.id] ?? new Set()}
-                  />
-                ))}
-              </div>
-            )}
+            ) : (() => {
+              const finalizados = partidos.filter((p) => p.finalizado);
+              const noFinalizados = partidos.filter((p) => !p.finalizado);
+              return (
+                <div className="space-y-2">
+                  {/* Finalizados colapsados */}
+                  {finalizados.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => setFinalizadosAdminAbiertos((v) => !v)}
+                        className="mb-2 flex w-full items-center justify-between gap-2 rounded-xl border border-cancha-600/30 bg-cancha-800/50 px-4 py-2.5 text-left"
+                      >
+                        <span className="text-xs font-semibold text-crema/40">
+                          {finalizados.length} partido{finalizados.length !== 1 ? "s" : ""} finalizado{finalizados.length !== 1 ? "s" : ""}
+                        </span>
+                        <span
+                          className="material-symbols-outlined text-base text-crema/30 transition-transform duration-200"
+                          style={{ transform: finalizadosAdminAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}
+                        >
+                          expand_more
+                        </span>
+                      </button>
+                      {finalizadosAdminAbiertos && (
+                        <div className="space-y-2 mb-2">
+                          {finalizados.map((p) => (
+                            <FilaAdmin
+                              key={p.id}
+                              partido={p}
+                              usuarios={usuarios}
+                              conProno={pronosticosPorPartido[p.id] ?? new Set()}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* No finalizados siempre visibles */}
+                  {noFinalizados.map((p) => (
+                    <FilaAdmin
+                      key={p.id}
+                      partido={p}
+                      usuarios={usuarios}
+                      conProno={pronosticosPorPartido[p.id] ?? new Set()}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
           </>
         )}
       </section>
