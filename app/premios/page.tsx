@@ -96,33 +96,6 @@ export default function Premios() {
             );
           })()}
 
-          {/* Premios por lugar */}
-          {premios.length > 0 && (
-            <div className="mb-8 overflow-hidden rounded-xl bg-cancha-800 shadow-carta">
-              <div className="flex items-center gap-3 border-b border-cancha-600/30 px-6 py-5">
-                <p className="text-xs font-mono uppercase tracking-widest text-crema/40">Por lugar</p>
-                <div className="flex overflow-hidden rounded-full" style={{ width: 48 }}>
-                  <div className="h-0.5 flex-1 bg-wc26-gold" />
-                  <div className="h-0.5 flex-1 bg-wc26-blue" />
-                  <div className="h-0.5 flex-1 bg-wc26-green" />
-                </div>
-              </div>
-              <div className="divide-y divide-cancha-600/30">
-                {premios.map((pr) => (
-                  <div key={pr.id} className="flex items-center gap-4 px-6 py-4">
-                    <span className={`w-20 shrink-0 rounded-full px-3 py-0.5 text-center text-xs font-black ${posicionColor(pr.posicion)}`}>
-                      {posicionLabel(pr.posicion)}
-                    </span>
-                    <span className="flex-1 text-sm font-semibold text-crema">{pr.descripcion}</span>
-                    {pr.valor && (
-                      <span className="font-mono text-sm font-bold text-lima">{pr.valor}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Premios adicionales */}
           {adicionales.length > 0 && (
             <div className="overflow-hidden rounded-xl bg-cancha-800 shadow-carta">
