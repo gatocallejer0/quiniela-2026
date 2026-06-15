@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import type { FilaTabla } from "@/lib/types";
+import type { FilaTabla, PuntosAdicional } from "@/lib/types";
 
 export default function Tabla() {
   const { session, perfil, cargando } = useAuth();
   const router = useRouter();
   const [filas, setFilas] = useState<FilaTabla[]>([]);
+  const [filasAd, setFilasAd] = useState<(PuntosAdicional & { nombre: string })[]>([]);
   const [cargandoData, setCargandoData] = useState(true);
 
   useEffect(() => {
@@ -20,11 +21,18 @@ export default function Tabla() {
     if (!session) return;
     (async () => {
       try {
-        const { data: tabla } = await supabase
-          .from("vista_tabla")
-          .select("*")
-          .order("puntos", { ascending: false });
+        const [{ data: tabla }, { data: pts }, { data: perfs }] = await Promise.all([
+          supabase.from("vista_tabla").select("*").order("puntos", { ascending: false }),
+          supabase.from("puntos_adicionales").select("*"),
+          supabase.from("perfiles").select("id, nombre"),
+        ]);
         setFilas((tabla as FilaTabla[]) ?? []);
+        const nombreMap: Record<string, string> = {};
+        (perfs as { id: string; nombre: string }[] | null)?.forEach((p) => { nombreMap[p.id] = p.nombre; });
+        const adOrdenado = ((pts as PuntosAdicional[] | null) ?? [])
+          .map((p) => ({ ...p, nombre: nombreMap[p.usuario_id] ?? "?" }))
+          .sort((a, b) => b.puntos - a.puntos);
+        setFilasAd(adOrdenado);
       } catch (_) {
       } finally {
         setCargandoData(false);
@@ -109,6 +117,38 @@ export default function Tabla() {
               Todavia sin participantes.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Tabla premios adicionales */}
+      {!cargandoData && filasAd.length > 0 && (
+        <div className="mt-10">
+          <h2 className="font-display mb-1 text-5xl text-lima uppercase">Premios adicionales</h2>
+          <p className="mb-6 text-sm text-crema/50">Puntos por actividades extra.</p>
+          <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800 shadow-carta">
+            {filasAd.map((f, i) => (
+              <div
+                key={f.usuario_id}
+                className={`flex items-center justify-between px-6 py-4 hover:bg-cancha-700/50 transition-colors ${
+                  i !== filasAd.length - 1 ? "border-b border-cancha-600/30" : ""
+                } ${f.usuario_id === perfil?.id ? "bg-lima/5" : ""}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex w-10 shrink-0 flex-col items-center">
+                    <span className="text-2xl leading-none">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "⭐"}</span>
+                    <span className="text-[10px] font-semibold text-crema/40">{i + 1}</span>
+                  </div>
+                  <span className="text-base font-semibold text-crema">
+                    {f.nombre}
+                    {f.usuario_id === perfil?.id && (
+                      <span className="ml-2 text-xs font-bold text-lima/70">(tu)</span>
+                    )}
+                  </span>
+                </div>
+                <span className="font-mono text-3xl font-bold text-lima tabular">{f.puntos}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

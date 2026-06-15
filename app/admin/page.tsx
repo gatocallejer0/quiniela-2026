@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import type { Partido, Perfil, Premio, PremioAdicional, Regla } from "@/lib/types";
+import type { Partido, Perfil, Premio, PremioAdicional, Regla, PuntosAdicional } from "@/lib/types";
 
 const TZ = "America/Guatemala";
 function fmt(iso: string) {
@@ -30,6 +30,7 @@ export default function Admin() {
   const [cargandoData, setCargandoData] = useState(true);
   const [pasadosAbiertos, setPasadosAbiertos] = useState(false);
   const [finalizadosAdminAbiertos, setFinalizadosAdminAbiertos] = useState(false);
+  const [puntosAd, setPuntosAd] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
@@ -38,13 +39,14 @@ export default function Admin() {
   useEffect(() => {
     if (!perfil?.es_admin) return;
     (async () => {
-      const [{ data: ps }, { data: us }, { data: pronos }, { data: prs }, { data: ads }, { data: rgs }] = await Promise.all([
+      const [{ data: ps }, { data: us }, { data: pronos }, { data: prs }, { data: ads }, { data: rgs }, { data: pts }] = await Promise.all([
         supabase.from("partidos").select("*").order("inicio", { ascending: true }),
         supabase.from("perfiles").select("*").order("nombre", { ascending: true }),
         supabase.from("pronosticos").select("usuario_id, partido_id"),
         supabase.from("premios").select("*").order("posicion", { ascending: true }),
         supabase.from("premios_adicionales").select("*").order("id", { ascending: true }),
         supabase.from("reglas").select("*").order("orden", { ascending: true }),
+        supabase.from("puntos_adicionales").select("*"),
       ]);
       setPartidos((ps as Partido[]) ?? []);
       setUsuarios((us as Perfil[]) ?? []);
@@ -58,6 +60,9 @@ export default function Admin() {
       setPremios((prs as Premio[]) ?? []);
       setAdicionales((ads as PremioAdicional[]) ?? []);
       setReglas((rgs as Regla[]) ?? []);
+      const mapapts: Record<string, number> = {};
+      (pts as PuntosAdicional[] | null)?.forEach(({ usuario_id, puntos }) => { mapapts[usuario_id] = puntos; });
+      setPuntosAd(mapapts);
       setCargandoData(false);
     })();
   }, [perfil]);
@@ -227,6 +232,38 @@ export default function Admin() {
                     prev.map((x) => (x.id === actualizado.id ? actualizado : x))
                   )
                 }
+              />
+            ))}
+            {usuarios.length === 0 && (
+              <p className="px-6 py-8 text-center text-crema/40">Sin usuarios.</p>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Puntos adicionales */}
+      <section>
+        <h2 className="font-display mb-1 text-5xl text-lima uppercase">Puntos adicionales</h2>
+        <p className="mb-6 text-sm text-crema/50">
+          Suma o resta puntos por actividades extra.
+        </p>
+        {cargandoData ? (
+          <p className="text-crema/50">Cargando&hellip;</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
+            {usuarios.map((u, i) => (
+              <FilaPuntosAd
+                key={u.id}
+                usuario={u}
+                puntos={puntosAd[u.id] ?? 0}
+                ultimo={i === usuarios.length - 1}
+                onChange={(delta) => {
+                  const actuales = puntosAd[u.id] ?? 0;
+                  const nuevos = actuales + delta;
+                  setPuntosAd((prev) => ({ ...prev, [u.id]: nuevos }));
+                  supabase.from("puntos_adicionales")
+                    .upsert({ usuario_id: u.id, puntos: nuevos }, { onConflict: "usuario_id" });
+                }}
               />
             ))}
             {usuarios.length === 0 && (
@@ -581,6 +618,41 @@ function FilaUsuario({
         )}
         {usuario.pagado ? "Pagado" : "Pendiente"}
       </button>
+    </div>
+  );
+}
+
+// Puntos adicionales
+
+function FilaPuntosAd({
+  usuario,
+  puntos,
+  ultimo,
+  onChange,
+}: {
+  usuario: Perfil;
+  puntos: number;
+  ultimo: boolean;
+  onChange: (delta: number) => void;
+}) {
+  return (
+    <div className={`flex items-center justify-between px-6 py-4 ${!ultimo ? "border-b border-cancha-600/30" : ""}`}>
+      <span className="text-sm font-semibold text-crema">{usuario.nombre}</span>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onChange(-1)}
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-cancha-600 text-crema/50 transition hover:border-wc26-red/60 hover:text-wc26-red"
+        >
+          <span className="material-symbols-outlined text-base">remove</span>
+        </button>
+        <span className="w-8 text-center font-mono text-lg font-bold text-lima tabular">{puntos}</span>
+        <button
+          onClick={() => onChange(1)}
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-cancha-600 text-crema/50 transition hover:border-lima/60 hover:text-lima"
+        >
+          <span className="material-symbols-outlined text-base">add</span>
+        </button>
+      </div>
     </div>
   );
 }

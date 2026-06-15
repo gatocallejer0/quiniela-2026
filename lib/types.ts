@@ -52,3 +52,8 @@ export type PremioAdicional = {
   descripcion: string;
   valor: string | null;
 };
+
+export type PuntosAdicional = {
+  usuario_id: string;
+  puntos: number;
+};
