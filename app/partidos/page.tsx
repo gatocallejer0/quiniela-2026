@@ -55,7 +55,7 @@ function puntosDe(p: Partido, pr?: Pronostico): number | null {
 }
 
 export default function Partidos() {
-  const { session, cargando } = useAuth();
+  const { session, perfil, cargando } = useAuth();
   const router = useRouter();
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [pronos, setPronos] = useState<Record<number, Pronostico>>({});
@@ -255,6 +255,7 @@ export default function Partidos() {
                             partido={p}
                             prono={pronos[p.id]}
                             usuarioId={session.user.id}
+                            esAdmin={perfil?.es_admin ?? false}
                             onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
                           />
                         ))}
@@ -269,6 +270,7 @@ export default function Partidos() {
                     partido={p}
                     prono={pronos[p.id]}
                     usuarioId={session.user.id}
+                    esAdmin={perfil?.es_admin ?? false}
                     onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
                   />
                 ))}
@@ -285,18 +287,21 @@ function CartaPartido({
   partido,
   prono,
   usuarioId,
+  esAdmin,
   onGuardado,
 }: {
   partido: Partido;
   prono?: Pronostico;
   usuarioId: string;
+  esAdmin: boolean;
   onGuardado: (p: Pronostico) => void;
 }) {
   const iniciado = useMemo(
     () => new Date(partido.inicio).getTime() - 10 * 60 * 1000 <= Date.now(),
     [partido.inicio]
   );
-  const bloqueado = iniciado || partido.finalizado;
+  // Admin puede editar aunque haya iniciado, siempre que no esté finalizado
+  const bloqueado = partido.finalizado || (!esAdmin && iniciado);
 
   const [local, setLocal] = useState(prono ? String(prono.goles_local) : "");
   const [visita, setVisita] = useState(prono ? String(prono.goles_visitante) : "");
