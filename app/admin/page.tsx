@@ -42,12 +42,16 @@ export default function Admin() {
   }, [cargando, session, perfil, router]);
 
   async function recargarParticipacion() {
-    const { data: pronos } = await supabase.from("pronosticos").select("usuario_id, partido_id");
+    const { data: pronos, error } = await supabase.from("pronosticos").select("usuario_id, partido_id");
+    console.log("recargar pronos:", pronos?.length, error);
+    const p42 = pronos?.filter((p: any) => p.partido_id === 42);
+    console.log("partido 42 pronos:", p42);
     const mapa: Record<number, Set<string>> = {};
     (pronos as { usuario_id: string; partido_id: number }[] | null)?.forEach(({ usuario_id, partido_id }) => {
       if (!mapa[partido_id]) mapa[partido_id] = new Set();
       mapa[partido_id].add(usuario_id);
     });
+    console.log("mapa partido 42:", mapa[42]);
     setPronosticosPorPartido(mapa);
   }
 
