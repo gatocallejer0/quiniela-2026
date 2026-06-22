@@ -41,6 +41,16 @@ export default function Admin() {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
   }, [cargando, session, perfil, router]);
 
+  async function recargarParticipacion() {
+    const { data: pronos } = await supabase.from("pronosticos").select("usuario_id, partido_id");
+    const mapa: Record<number, Set<string>> = {};
+    (pronos as { usuario_id: string; partido_id: number }[] | null)?.forEach(({ usuario_id, partido_id }) => {
+      if (!mapa[partido_id]) mapa[partido_id] = new Set();
+      mapa[partido_id].add(usuario_id);
+    });
+    setPronosticosPorPartido(mapa);
+  }
+
   useEffect(() => {
     if (!perfil?.es_admin) return;
     (async () => {
@@ -158,15 +168,24 @@ export default function Admin() {
 
       {/* Participación */}
       <section>
-        <button
-          onClick={() => setParticipacionAbierta((v) => !v)}
-          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
-        >
-          <h2 className="font-display text-5xl text-lima uppercase">Participación</h2>
-          <span className="material-symbols-outlined text-3xl text-lima/50 transition-transform duration-200" style={{ transform: participacionAbierta ? "rotate(0deg)" : "rotate(-90deg)" }}>
-            expand_more
-          </span>
-        </button>
+        <div className="mb-1 flex w-full items-center justify-between gap-3">
+          <button
+            onClick={() => setParticipacionAbierta((v) => !v)}
+            className="flex flex-1 items-center justify-between gap-3 text-left"
+          >
+            <h2 className="font-display text-5xl text-lima uppercase">Participación</h2>
+            <span className="material-symbols-outlined text-3xl text-lima/50 transition-transform duration-200" style={{ transform: participacionAbierta ? "rotate(0deg)" : "rotate(-90deg)" }}>
+              expand_more
+            </span>
+          </button>
+          <button
+            onClick={recargarParticipacion}
+            title="Actualizar participación"
+            className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cancha-600 text-crema/40 transition hover:border-lima/50 hover:text-lima"
+          >
+            <span className="material-symbols-outlined text-base">refresh</span>
+          </button>
+        </div>
         {participacionAbierta && (cargandoData ? (
           <p className="text-crema/50">Cargando&hellip;</p>
         ) : (() => {

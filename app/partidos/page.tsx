@@ -270,7 +270,7 @@ export default function Partidos() {
                     partido={p}
                     prono={pronos[p.id]}
                     usuarioId={session.user.id}
-                    esAdmin={perfil?.es_admin ?? false}
+
                     onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
                   />
                 ))}
