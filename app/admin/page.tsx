@@ -42,16 +42,15 @@ export default function Admin() {
   }, [cargando, session, perfil, router]);
 
   async function recargarParticipacion() {
-    const { data: pronos, error } = await supabase.from("pronosticos").select("usuario_id, partido_id");
-    console.log("recargar pronos:", pronos?.length, error);
-    const p42 = pronos?.filter((p: any) => p.partido_id === 42);
-    console.log("partido 42 pronos:", p42);
+    const { data: pronos } = await supabase
+      .from("pronosticos")
+      .select("usuario_id, partido_id")
+      .limit(10000);
     const mapa: Record<number, Set<string>> = {};
     (pronos as { usuario_id: string; partido_id: number }[] | null)?.forEach(({ usuario_id, partido_id }) => {
       if (!mapa[partido_id]) mapa[partido_id] = new Set();
       mapa[partido_id].add(usuario_id);
     });
-    console.log("mapa partido 42:", mapa[42]);
     setPronosticosPorPartido(mapa);
   }
 
@@ -61,7 +60,7 @@ export default function Admin() {
       const [{ data: ps }, { data: us }, { data: pronos }, { data: prs }, { data: ads }, { data: rgs }, { data: pts }] = await Promise.all([
         supabase.from("partidos").select("*").order("inicio", { ascending: true }),
         supabase.from("perfiles").select("*").order("nombre", { ascending: true }),
-        supabase.from("pronosticos").select("usuario_id, partido_id"),
+        supabase.from("pronosticos").select("usuario_id, partido_id").limit(10000),
         supabase.from("premios").select("*").order("posicion", { ascending: true }),
         supabase.from("premios_adicionales").select("*").order("id", { ascending: true }),
         supabase.from("reglas").select("*").order("orden", { ascending: true }),
