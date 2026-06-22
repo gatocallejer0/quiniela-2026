@@ -42,10 +42,12 @@ export default function Admin() {
   }, [cargando, session, perfil, router]);
 
   async function recargarParticipacion() {
+    const idsActivos = partidos.map((p) => p.id);
+    if (idsActivos.length === 0) return;
     const { data: pronos } = await supabase
       .from("pronosticos")
       .select("usuario_id, partido_id")
-      .limit(10000);
+      .in("partido_id", idsActivos);
     const mapa: Record<number, Set<string>> = {};
     (pronos as { usuario_id: string; partido_id: number }[] | null)?.forEach(({ usuario_id, partido_id }) => {
       if (!mapa[partido_id]) mapa[partido_id] = new Set();
@@ -57,15 +59,18 @@ export default function Admin() {
   useEffect(() => {
     if (!perfil?.es_admin) return;
     (async () => {
-      const [{ data: ps }, { data: us }, { data: pronos }, { data: prs }, { data: ads }, { data: rgs }, { data: pts }] = await Promise.all([
+      const [{ data: ps }, { data: us }, { data: prs }, { data: ads }, { data: rgs }, { data: pts }] = await Promise.all([
         supabase.from("partidos").select("*").order("inicio", { ascending: true }),
         supabase.from("perfiles").select("*").order("nombre", { ascending: true }),
-        supabase.from("pronosticos").select("usuario_id, partido_id").limit(10000),
         supabase.from("premios").select("*").order("posicion", { ascending: true }),
         supabase.from("premios_adicionales").select("*").order("id", { ascending: true }),
         supabase.from("reglas").select("*").order("orden", { ascending: true }),
         supabase.from("puntos_adicionales").select("*"),
       ]);
+      const partidsIds = ((ps as Partido[]) ?? []).map((p) => p.id);
+      const { data: pronos } = partidsIds.length > 0
+        ? await supabase.from("pronosticos").select("usuario_id, partido_id").in("partido_id", partidsIds)
+        : { data: [] };
       setPartidos((ps as Partido[]) ?? []);
       setUsuarios((us as Perfil[]) ?? []);
       // Mapa: partido_id -> Set de usuario_ids que ya pusieron pronóstico
