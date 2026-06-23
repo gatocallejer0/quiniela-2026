@@ -322,12 +322,16 @@ function CartaPartido({
       goles_local: Number(local),
       goles_visitante: Number(visita),
     };
-    const { error } = await supabase
+    const { data: saved, error } = await supabase
       .from("pronosticos")
-      .upsert(fila, { onConflict: "usuario_id,partido_id" });
+      .upsert(fila, { onConflict: "usuario_id,partido_id" })
+      .select();
     if (error) {
       setEstado("error");
-      setMsg(error.message.includes("policy") ? "El partido ya empezo: pronostico bloqueado." : error.message);
+      setMsg(error.message.includes("policy") ? "El partido ya empezó: pronóstico bloqueado." : error.message);
+    } else if (!saved || saved.length === 0) {
+      setEstado("error");
+      setMsg("No se pudo guardar: el partido ya empezó.");
     } else {
       setEstado("ok");
       setMsg("Guardado");
