@@ -41,15 +41,30 @@ export default function Admin() {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
   }, [cargando, session, perfil, router]);
 
+  async function fetchTodosLosPronos(ids: number[]) {
+    const todos: { usuario_id: string; partido_id: number }[] = [];
+    const PAGE = 1000;
+    let desde = 0;
+    while (true) {
+      const { data } = await supabase
+        .from("pronosticos")
+        .select("usuario_id, partido_id")
+        .in("partido_id", ids)
+        .range(desde, desde + PAGE - 1);
+      if (!data || data.length === 0) break;
+      todos.push(...(data as { usuario_id: string; partido_id: number }[]));
+      if (data.length < PAGE) break;
+      desde += PAGE;
+    }
+    return todos;
+  }
+
   async function recargarParticipacion() {
-    const idsActivos = partidos.map((p) => p.id);
-    if (idsActivos.length === 0) return;
-    const { data: pronos } = await supabase
-      .from("pronosticos")
-      .select("usuario_id, partido_id")
-      .in("partido_id", idsActivos);
+    const ids = partidos.map((p) => p.id);
+    if (ids.length === 0) return;
+    const pronos = await fetchTodosLosPronos(ids);
     const mapa: Record<number, Set<string>> = {};
-    (pronos as { usuario_id: string; partido_id: number }[] | null)?.forEach(({ usuario_id, partido_id }) => {
+    pronos.forEach(({ usuario_id, partido_id }) => {
       if (!mapa[partido_id]) mapa[partido_id] = new Set();
       mapa[partido_id].add(usuario_id);
     });
@@ -68,14 +83,12 @@ export default function Admin() {
         supabase.from("puntos_adicionales").select("*"),
       ]);
       const partidsIds = ((ps as Partido[]) ?? []).map((p) => p.id);
-      const { data: pronos } = partidsIds.length > 0
-        ? await supabase.from("pronosticos").select("usuario_id, partido_id").in("partido_id", partidsIds)
-        : { data: [] };
+      const pronos = partidsIds.length > 0 ? await fetchTodosLosPronos(partidsIds) : [];
       setPartidos((ps as Partido[]) ?? []);
       setUsuarios((us as Perfil[]) ?? []);
       // Mapa: partido_id -> Set de usuario_ids que ya pusieron pronóstico
       const mapa: Record<number, Set<string>> = {};
-      (pronos as { usuario_id: string; partido_id: number }[] | null)?.forEach(({ usuario_id, partido_id }) => {
+      pronos.forEach(({ usuario_id, partido_id }) => {
         if (!mapa[partido_id]) mapa[partido_id] = new Set();
         mapa[partido_id].add(usuario_id);
       });
