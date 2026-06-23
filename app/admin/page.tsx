@@ -60,15 +60,9 @@ export default function Admin() {
   }
 
   async function recargarParticipacion() {
-    console.log("refresh clicked, partidos:", partidos.length);
     const ids = partidos.map((p) => p.id);
-    if (ids.length === 0) { console.log("ids vacíos, saliendo"); return; }
+    if (ids.length === 0) return;
     const pronos = await fetchTodosLosPronos(ids);
-    console.log("total pronos fetched:", pronos.length);
-    const monica = pronos.filter((p) => p.usuario_id === "ffd0f96d-8afb-4faa-b324-9bdf1d8ad806");
-    console.log("monica pronos:", monica);
-    const p44 = pronos.filter((p) => p.partido_id === 44);
-    console.log("partido 44 pronos:", p44.length, p44.map(p => p.usuario_id));
     const mapa: Record<number, Set<string>> = {};
     pronos.forEach(({ usuario_id, partido_id }) => {
       if (!mapa[partido_id]) mapa[partido_id] = new Set();
