@@ -60,8 +60,9 @@ export default function Admin() {
   }
 
   async function recargarParticipacion() {
+    console.log("refresh clicked, partidos:", partidos.length);
     const ids = partidos.map((p) => p.id);
-    if (ids.length === 0) return;
+    if (ids.length === 0) { console.log("ids vacíos, saliendo"); return; }
     const pronos = await fetchTodosLosPronos(ids);
     console.log("total pronos fetched:", pronos.length);
     const monica = pronos.filter((p) => p.usuario_id === "ffd0f96d-8afb-4faa-b324-9bdf1d8ad806");
