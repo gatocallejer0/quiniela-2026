@@ -77,6 +77,8 @@ export function QuienesFaltan() {
         supabase.from("perfiles").select("id, nombre").order("nombre"),
       ]);
 
+      console.log("[QuienesFaltan] partidos:", ps?.length, "rpc error:", prs === null, "perfiles:", pfs?.length);
+
       const perfiles = (pfs ?? []) as Perfil[];
       const pronoMap: Record<number, Set<string>> = {};
       ((prs ?? []) as { partido_id: number; usuario_id: string }[]).forEach(({ partido_id, usuario_id }) => {
@@ -93,11 +95,23 @@ export function QuienesFaltan() {
 
       setPartidos(conEstado);
       setLoading(false);
-    })();
+    })().catch((e) => {
+      console.error("[QuienesFaltan] fetch error:", e);
+      setLoading(false);
+    });
   }, [session]);
 
   if (cargando || !session || loading) return null;
-  if (partidos.length === 0) return null;
+  if (partidos.length === 0) {
+    // Componente monta pero no hay partidos futuros — revisa la consola del navegador
+    return (
+      <div className="mb-8 rounded-xl border border-cancha-600/30 bg-cancha-800 px-6 py-4">
+        <p className="text-xs text-crema/30">
+          Quiénes faltan · sin partidos próximos (revisa consola)
+        </p>
+      </div>
+    );
+  }
 
   const totalParticipantes = new Set(
     partidos.flatMap((p) => [...p.listos, ...p.faltan.map((f) => f.id)])
