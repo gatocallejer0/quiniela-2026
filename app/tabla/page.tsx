@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import type { FilaTabla, PuntosAdicional } from "@/lib/types";
+
+const DonaDesglose = dynamic(
+  () => import("@/components/DonaDesglose").then((m) => m.DonaDesglose),
+  { ssr: false }
+);
 
 
 
@@ -84,7 +90,11 @@ export default function Tabla() {
       <h1 className="font-display mb-1 text-5xl text-lima uppercase">Tabla</h1>
       <p className="mb-6 text-sm text-crema/50">Posiciones de la familia.</p>
 
-{cargandoData ? (
+      {!cargando && session && (
+        <DonaDesglose currentUid={session.user.id} />
+      )}
+
+      {cargandoData ? (
         <p className="text-crema/40">Cargando...</p>
       ) : (
         <>
