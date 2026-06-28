@@ -1,19 +1,27 @@
 -- ============================================================
---  MIGRACIÓN: Vista puntos por fase para gráfica de evolución
---  Pega en el SQL Editor de Supabase y ejecuta.
--- ============================================================
---
---  Fórmula idéntica a vista_tabla (migration_knockout.sql).
---  Cross-join perfiles × fases-jugadas garantiza que todos los
---  usuarios aparezcan en cada fase, aunque tengan 0 puntos.
---  Solo incluye partidos con finalizado = true → no hay ceros futuros.
+--  MIGRACIÓN: Vista puntos por jornada para gráfica de evolución
+--  Cada "jornada" = un día calendario con partidos (hora GT).
+--  Cross-join perfiles × jornadas → todos los usuarios en cada día.
+--  Solo incluye días con partidos finalizados → sin ceros futuros.
 -- ============================================================
 
-create or replace view vista_puntos_por_fase as
+drop view if exists vista_puntos_por_fase;
+
+create or replace view vista_puntos_por_jornada as
+with jornadas as (
+  select distinct
+    date_trunc('day', inicio at time zone 'America/Guatemala') as dia,
+    dense_rank() over (
+      order by date_trunc('day', inicio at time zone 'America/Guatemala')
+    ) as num
+  from partidos
+  where finalizado = true
+)
 select
-  pf.id   as usuario_id,
+  pf.id        as usuario_id,
   pf.nombre,
-  coalesce(p.fase, 'Grupos') as fase,
+  j.num        as jornada_num,
+  'J' || j.num as jornada,
   coalesce(sum(
     case
       when not p.finalizado or p.goles_local_final is null then 0
@@ -35,17 +43,13 @@ select
     end
   ), 0) as puntos
 from perfiles pf
-cross join (
-  select distinct coalesce(fase, 'Grupos') as fase_key
-  from partidos
-  where finalizado = true
-) fases_jugadas
+cross join jornadas j
 join partidos p
-  on coalesce(p.fase, 'Grupos') = fases_jugadas.fase_key
+  on date_trunc('day', p.inicio at time zone 'America/Guatemala') = j.dia
  and p.finalizado = true
 left join pronosticos pr
   on pr.usuario_id = pf.id
  and pr.partido_id = p.id
-group by pf.id, pf.nombre, coalesce(p.fase, 'Grupos');
+group by pf.id, pf.nombre, j.num;
 
-grant select on vista_puntos_por_fase to anon, authenticated;
+grant select on vista_puntos_por_jornada to anon, authenticated;
