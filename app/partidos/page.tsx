@@ -32,7 +32,6 @@ const BANDERAS: Record<string, string> = {
 const bandera = (equipo: string) => BANDERAS[equipo] ?? "";
 
 function fmtFecha(iso: string) {
-  const d = new Date(iso);
   return new Intl.DateTimeFormat("es-GT", {
     timeZone: TZ,
     weekday: "short",
@@ -40,7 +39,7 @@ function fmtFecha(iso: string) {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(d);
+  }).format(new Date(iso));
 }
 
 export default function Partidos() {
@@ -49,8 +48,6 @@ export default function Partidos() {
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [pronos, setPronos] = useState<Record<number, Pronostico>>({});
   const [cargandoData, setCargandoData] = useState(true);
-  const [filtroEquipo, setFiltroEquipo] = useState("");
-  const [filtroFecha, setFiltroFecha] = useState("");
   const [pasadosAbiertos, setPasadosAbiertos] = useState(false);
 
   useEffect(() => {
@@ -94,7 +91,6 @@ export default function Partidos() {
 
   if (cargando || !session) return null;
 
-  // Stats: un solo pase sobre los partidos finalizados con pronóstico
   const finalizados = partidos.filter((p) => p.finalizado && pronos[p.id]);
   let totalPuntos = 0, exactos = 0, resultados = 0, ptsExactos = 0, ptsResultados = 0;
   for (const p of finalizados) {
@@ -106,22 +102,8 @@ export default function Partidos() {
   }
   const fallidos = finalizados.length - exactos - resultados;
 
-  const fechaGT = (iso: string) =>
-    new Intl.DateTimeFormat("es-GT", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" })
-      .format(new Date(iso));
-
-  const fechaLabel = (iso: string) =>
-    new Intl.DateTimeFormat("es-GT", { timeZone: TZ, weekday: "short", day: "2-digit", month: "short" })
-      .format(new Date(iso));
-
-  const equipos = [...new Set(partidos.flatMap((p) => [p.equipo_local, p.equipo_visitante]))].sort();
-  const fechas  = [...new Map(partidos.map((p) => [fechaGT(p.inicio), p.inicio])).entries()];
-
-  const partidosFiltrados = partidos.filter((p) => {
-    if (filtroEquipo && p.equipo_local !== filtroEquipo && p.equipo_visitante !== filtroEquipo) return false;
-    if (filtroFecha && fechaGT(p.inicio) !== filtroFecha) return false;
-    return true;
-  });
+  const pasados = partidos.filter((p) => p.finalizado);
+  const proximos = partidos.filter((p) => !p.finalizado);
 
   return (
     <div className="aparece">
@@ -133,7 +115,6 @@ export default function Partidos() {
       {/* Stats card */}
       {!cargandoData && finalizados.length > 0 && (
         <div className="mb-8 overflow-hidden rounded-xl bg-cancha-800 shadow-carta">
-          {/* Fila superior */}
           <div className="flex items-center justify-between border-b border-cancha-600/30 p-6 md:p-8">
             <div>
               <span className="block text-xs font-mono uppercase tracking-widest text-crema/40">
@@ -155,7 +136,6 @@ export default function Partidos() {
               workspace_premium
             </span>
           </div>
-          {/* Grid 3 columnas */}
           <div className="grid grid-cols-3 divide-x divide-cancha-600/30">
             <div className="flex flex-col items-center p-5 text-center hover:bg-cancha-700/50 transition-colors">
               <div className="font-mono text-3xl font-bold text-crema mb-1">{exactos}</div>
@@ -176,104 +156,63 @@ export default function Partidos() {
         </div>
       )}
 
-      {/* Filtros */}
-      {!cargandoData && partidos.length > 0 && (
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-          <select
-            value={filtroEquipo}
-            onChange={(e) => setFiltroEquipo(e.target.value)}
-            className="flex-1 rounded-xl border border-cancha-600 bg-cancha-800 px-4 py-2.5 text-sm text-crema outline-none focus:border-lima"
-          >
-            <option value="">Todos los países</option>
-            {equipos.map((eq) => (
-              <option key={eq} value={eq}>{bandera(eq)} {eq}</option>
-            ))}
-          </select>
-          <select
-            value={filtroFecha}
-            onChange={(e) => setFiltroFecha(e.target.value)}
-            className="flex-1 rounded-xl border border-cancha-600 bg-cancha-800 px-4 py-2.5 text-sm text-crema outline-none focus:border-lima"
-          >
-            <option value="">Todas las fechas</option>
-            {fechas.map(([fecha, iso]) => (
-              <option key={fecha} value={fecha}>{fechaLabel(iso)}</option>
-            ))}
-          </select>
-          {(filtroEquipo || filtroFecha) && (
-            <button
-              onClick={() => { setFiltroEquipo(""); setFiltroFecha(""); }}
-              className="rounded-xl border border-cancha-600 px-4 py-2.5 text-sm text-crema/50 hover:text-crema transition-colors"
-            >
-              Limpiar
-            </button>
-          )}
-        </div>
-      )}
-
       {cargandoData ? (
         <p className="text-crema/40">Cargando partidos...</p>
       ) : partidos.length === 0 ? (
         <p className="text-crema/40">
           Aun no hay partidos cargados. (El admin debe cargar el calendario.)
         </p>
-      ) : (() => {
-        const pasados = partidosFiltrados.filter((p) => p.finalizado);
-        const proximos = partidosFiltrados.filter((p) => !p.finalizado);
-        return (
-          <div className="space-y-3">
-            {partidosFiltrados.length === 0 ? (
-              <p className="py-8 text-center text-crema/40">No hay partidos con ese filtro.</p>
-            ) : (
-              <>
-                {/* Partidos pasados colapsados */}
-                {pasados.length > 0 && (
-                  <div>
-                    <button
-                      onClick={() => setPasadosAbiertos((v) => !v)}
-                      className="mb-3 flex w-full items-center justify-between gap-2 rounded-xl border border-cancha-600/30 bg-cancha-800/50 px-4 py-2.5 text-left"
-                    >
-                      <span className="text-xs font-semibold text-crema/40">
-                        {pasados.length} partido{pasados.length !== 1 ? "s" : ""} anterior{pasados.length !== 1 ? "es" : ""}
-                      </span>
-                      <span
-                        className="material-symbols-outlined text-base text-crema/30 transition-transform duration-200"
-                        style={{ transform: pasadosAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}
-                      >
-                        expand_more
-                      </span>
-                    </button>
-                    {pasadosAbiertos && (
-                      <div className="space-y-3 mb-3">
-                        {pasados.map((p) => (
-                          <CartaPartido
-                            key={p.id}
-                            partido={p}
-                            prono={pronos[p.id]}
-                            usuarioId={session.user.id}
-                            esAdmin={perfil?.es_admin ?? false}
-                            onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Partidos actuales y próximos */}
-                {proximos.map((p) => (
-                  <CartaPartido
-                    key={p.id}
-                    partido={p}
-                    prono={pronos[p.id]}
-                    usuarioId={session.user.id}
-                    esAdmin={perfil?.es_admin ?? false}
-                    onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
-                  />
-                ))}
-              </>
-            )}
-          </div>
-        );
-      })()}
+      ) : (
+        <div className="space-y-3">
+          {/* Partidos pasados colapsados */}
+          {pasados.length > 0 && (
+            <div>
+              <button
+                onClick={() => setPasadosAbiertos((v) => !v)}
+                className="mb-3 flex w-full items-center justify-between gap-2 rounded-xl border border-cancha-600/30 bg-cancha-800/50 px-4 py-2.5 text-left"
+              >
+                <span className="text-xs font-semibold text-crema/40">
+                  {pasados.length} partido{pasados.length !== 1 ? "s" : ""} anterior{pasados.length !== 1 ? "es" : ""}
+                </span>
+                <span
+                  className="material-symbols-outlined text-base text-crema/30 transition-transform duration-200"
+                  style={{ transform: pasadosAbiertos ? "rotate(0deg)" : "rotate(-90deg)" }}
+                >
+                  expand_more
+                </span>
+              </button>
+              {pasadosAbiertos && (
+                <div className="space-y-3 mb-3">
+                  {pasados.map((p) => (
+                    <CartaPartido
+                      key={p.id}
+                      partido={p}
+                      prono={pronos[p.id]}
+                      usuarioId={session.user.id}
+                      esAdmin={perfil?.es_admin ?? false}
+                      onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Partidos actuales y próximos */}
+          {proximos.map((p) => (
+            <CartaPartido
+              key={p.id}
+              partido={p}
+              prono={pronos[p.id]}
+              usuarioId={session.user.id}
+              esAdmin={perfil?.es_admin ?? false}
+              onGuardado={(pr) => setPronos((m) => ({ ...m, [p.id]: pr }))}
+            />
+          ))}
+          {proximos.length === 0 && pasados.length > 0 && (
+            <p className="py-8 text-center text-crema/40">No hay más partidos por jugar.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -344,18 +283,17 @@ function CartaPartido({
     }
   }
 
-  // Color del borde izquierdo según resultado
   const borderColor =
-    desglose?.marcador === 3                                         ? "border-l-lima"      :
-    desglose?.marcador === 1                                         ? "border-l-wc26-blue" :
-    desglose?.marcador === 0 && desglose.clasificadoBonus === 2     ? "border-l-wc26-gold" :
-    desglose?.marcador === 0                                         ? "border-l-wc26-red"  :
-    iniciado && !partido.finalizado                                  ? "border-l-wc26-gold" :
+    desglose?.marcador === 3                                     ? "border-l-lima"      :
+    desglose?.marcador === 1                                     ? "border-l-wc26-blue" :
+    desglose?.marcador === 0 && desglose.clasificadoBonus === 2 ? "border-l-wc26-gold" :
+    desglose?.marcador === 0                                     ? "border-l-wc26-red"  :
+    iniciado && !partido.finalizado                              ? "border-l-wc26-gold" :
     "border-l-cancha-600";
 
   return (
     <div className={`border-l-4 ${borderColor} bg-cancha-800 rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-200`}>
-      {/* Header: fecha y grupo/fase */}
+      {/* Header */}
       <div className="flex items-center justify-between bg-cancha-700/40 px-6 py-3">
         <span className="text-xs font-mono text-crema/40">{fmtFecha(partido.inicio)}</span>
         <span className="rounded bg-cancha-600/50 px-2 py-0.5 text-xs text-crema/60">
@@ -363,57 +301,42 @@ function CartaPartido({
         </span>
       </div>
 
-      {/* Cuerpo: equipos y marcador */}
+      {/* Equipos y marcador */}
       <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-16 px-6 py-8 md:py-10">
-        {/* Equipo local */}
         <div className="flex items-center gap-3 md:flex-row-reverse">
           <span className="text-2xl leading-none">{bandera(partido.equipo_local)}</span>
-          <span className="text-xl font-bold text-crema md:text-right">
-            {partido.equipo_local}
-          </span>
+          <span className="text-xl font-bold text-crema md:text-right">{partido.equipo_local}</span>
         </div>
 
-        {/* Scores */}
         {bloqueado ? (
           <div className="flex items-center gap-3">
-            <span className="font-mono text-5xl font-bold text-lima">
-              {prono?.goles_local ?? "–"}
-            </span>
+            <span className="font-mono text-5xl font-bold text-lima">{prono?.goles_local ?? "–"}</span>
             <span className="text-cancha-600 text-3xl">:</span>
-            <span className="font-mono text-5xl font-bold text-lima">
-              {prono?.goles_visitante ?? "–"}
-            </span>
+            <span className="font-mono text-5xl font-bold text-lima">{prono?.goles_visitante ?? "–"}</span>
           </div>
         ) : (
           <div className="flex items-center gap-3">
             <input
-              type="number"
-              min={0}
-              value={local}
+              type="number" min={0} value={local}
               onChange={(e) => setLocal(e.target.value)}
               className="w-16 h-16 bg-cancha-700 text-lima font-mono text-4xl font-bold text-center rounded-xl border-none outline-none focus:ring-4 focus:ring-lima/30 transition-all"
             />
             <span className="text-cancha-600 text-3xl">:</span>
             <input
-              type="number"
-              min={0}
-              value={visita}
+              type="number" min={0} value={visita}
               onChange={(e) => setVisita(e.target.value)}
               className="w-16 h-16 bg-cancha-700 text-lima font-mono text-4xl font-bold text-center rounded-xl border-none outline-none focus:ring-4 focus:ring-lima/30 transition-all"
             />
           </div>
         )}
 
-        {/* Equipo visitante */}
         <div className="flex items-center gap-3">
           <span className="text-2xl leading-none">{bandera(partido.equipo_visitante)}</span>
-          <span className="text-xl font-bold text-crema">
-            {partido.equipo_visitante}
-          </span>
+          <span className="text-xl font-bold text-crema">{partido.equipo_visitante}</span>
         </div>
       </div>
 
-      {/* Selector de clasificado (solo fases eliminatorias) */}
+      {/* Selector de clasificado (solo knockouts) */}
       {esKnockout && (
         <div className="px-6 pb-6">
           {bloqueado ? (
@@ -431,8 +354,7 @@ function CartaPartido({
               <div className="grid grid-cols-2 gap-2">
                 {[partido.equipo_local, partido.equipo_visitante].map((eq) => (
                   <button
-                    key={eq}
-                    type="button"
+                    key={eq} type="button"
                     onClick={() => setClasificadoPred(eq)}
                     className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                       clasificadoPred === eq
@@ -449,7 +371,7 @@ function CartaPartido({
         </div>
       )}
 
-      {/* Footer según estado */}
+      {/* Footer */}
       {partido.finalizado && partido.goles_local_final != null ? (
         <div className="flex items-center justify-between bg-lima/5 border-t border-cancha-600/30 px-6 py-3">
           <div className="flex flex-col gap-0.5">
@@ -473,10 +395,10 @@ function CartaPartido({
           </div>
           {desglose != null ? (
             <span className={`rounded-full px-3 py-1 text-xs font-black ${
-              desglose.marcador === 3                                     ? "bg-lima text-carbon"            :
-              desglose.marcador === 1                                     ? "bg-wc26-blue/20 text-wc26-blue" :
-              desglose.clasificadoBonus === 2                             ? "bg-wc26-gold/20 text-wc26-gold" :
-                                                                           "bg-wc26-red/20 text-wc26-red"
+              desglose.marcador === 3                         ? "bg-lima text-carbon"            :
+              desglose.marcador === 1                         ? "bg-wc26-blue/20 text-wc26-blue" :
+              desglose.clasificadoBonus === 2                 ? "bg-wc26-gold/20 text-wc26-gold" :
+                                                               "bg-wc26-red/20 text-wc26-red"
             }`}>
               {desglose.marcador === 3 ? "Exacto" : desglose.marcador === 1 ? "Resultado" : "Fallido"}
               {desglose.clasificadoBonus === 2 && " + Clasificado"}
