@@ -243,6 +243,7 @@ function CartaPartido({
   const [clasificadoPred, setClasificadoPred] = useState(prono?.clasificado ?? "");
   const [estado, setEstado] = useState<"" | "guardando" | "ok" | "error">("");
   const [msg, setMsg] = useState("");
+  const [errorClasificado, setErrorClasificado] = useState(false);
 
   const desglose = calcularPuntos(partido, prono);
 
@@ -254,9 +255,11 @@ function CartaPartido({
     }
     if (esKnockout && !clasificadoPred) {
       setEstado("error");
-      setMsg("Selecciona el equipo que avanza.");
+      setMsg("Selecciona el equipo que avanza a la siguiente ronda.");
+      setErrorClasificado(true);
       return;
     }
+    setErrorClasificado(false);
     setEstado("guardando");
     const fila: Pronostico = {
       usuario_id: usuarioId,
@@ -348,18 +351,20 @@ function CartaPartido({
             </div>
           ) : (
             <div>
-              <span className="block mb-2 text-xs font-semibold uppercase tracking-wide text-crema/40">
-                ¿Quién avanza a la siguiente ronda?
+              <span className={`block mb-2 text-xs font-semibold uppercase tracking-wide ${errorClasificado ? "text-wc26-red" : "text-crema/40"}`}>
+                {errorClasificado ? "⚠ Debes seleccionar quién avanza" : "¿Quién avanza a la siguiente ronda?"}
               </span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className={`grid grid-cols-2 gap-2 rounded-xl p-1 transition-all ${errorClasificado ? "ring-2 ring-wc26-red/60 bg-wc26-red/5" : ""}`}>
                 {[partido.equipo_local, partido.equipo_visitante].map((eq) => (
                   <button
                     key={eq} type="button"
-                    onClick={() => setClasificadoPred(eq)}
+                    onClick={() => { setClasificadoPred(eq); setErrorClasificado(false); setEstado(""); setMsg(""); }}
                     className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                       clasificadoPred === eq
                         ? "border-lima bg-lima/10 text-lima"
-                        : "border-cancha-600 text-crema/60 hover:border-lima/40 hover:text-crema"
+                        : errorClasificado
+                          ? "border-wc26-red/50 text-crema/60 hover:border-wc26-red hover:text-crema"
+                          : "border-cancha-600 text-crema/60 hover:border-lima/40 hover:text-crema"
                     }`}
                   >
                     {bandera(eq)} {eq}
