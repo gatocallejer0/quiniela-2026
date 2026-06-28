@@ -12,9 +12,11 @@ export type Partido = {
   inicio: string; // ISO UTC
   grupo: string | null;
   fase: string | null;
-  goles_local_final: number | null;
-  goles_visitante_final: number | null;
+  goles_local_final: number | null;    // marcador a 90 min
+  goles_visitante_final: number | null; // marcador a 90 min
   finalizado: boolean;
+  clasificado: string | null;  // equipo que avanzó (solo fases eliminatorias)
+  multiplicador: number;       // x1 Dieciseisavos … x5 Final
 };
 
 export type Pronostico = {
@@ -23,6 +25,7 @@ export type Pronostico = {
   partido_id: number;
   goles_local: number;
   goles_visitante: number;
+  clasificado: string | null;  // predicción de quién avanza (null para grupos)
 };
 
 export type FilaTabla = {

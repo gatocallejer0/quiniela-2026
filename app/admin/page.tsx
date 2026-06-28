@@ -1099,6 +1099,8 @@ function FilaAdmin({ partido, usuarios, conProno }: {
   usuarios: Perfil[];
   conProno: Set<string>;
 }) {
+  const esKnockout = partido.fase !== null;
+
   const [gl, setGl] = useState(
     partido.goles_local_final != null ? String(partido.goles_local_final) : ""
   );
@@ -1107,17 +1109,23 @@ function FilaAdmin({ partido, usuarios, conProno }: {
       ? String(partido.goles_visitante_final)
       : ""
   );
+  const [clasificado, setClasificado] = useState(partido.clasificado ?? "");
   const [fin, setFin] = useState(partido.finalizado);
   const [msg, setMsg] = useState("");
+
   async function guardar() {
     setMsg("...");
+    const cambios: Record<string, unknown> = {
+      goles_local_final:     gl === "" ? null : Number(gl),
+      goles_visitante_final: gv === "" ? null : Number(gv),
+      finalizado:            fin,
+    };
+    if (esKnockout) {
+      cambios.clasificado = clasificado || null;
+    }
     const { error } = await supabase
       .from("partidos")
-      .update({
-        goles_local_final: gl === "" ? null : Number(gl),
-        goles_visitante_final: gv === "" ? null : Number(gv),
-        finalizado: fin,
-      })
+      .update(cambios)
       .eq("id", partido.id);
     setMsg(error ? "Error: " + error.message : "Guardado");
     if (!error) setTimeout(() => setMsg(""), 1500);
@@ -1126,6 +1134,13 @@ function FilaAdmin({ partido, usuarios, conProno }: {
   return (
     <div className="rounded-xl border border-cancha-600/40 bg-cancha-800 p-3">
       <div className="mb-2 text-xs text-crema/40">{fmt(partido.inicio)}</div>
+
+      {esKnockout && (
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-crema/30">
+          Marcador a 90 min
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 flex-1 truncate text-right text-sm font-semibold text-crema">
           {partido.equipo_local}
@@ -1149,6 +1164,25 @@ function FilaAdmin({ partido, usuarios, conProno }: {
           {partido.equipo_visitante}
         </span>
       </div>
+
+      {/* Selector de clasificado — solo fases eliminatorias */}
+      {esKnockout && (
+        <div className="mt-3">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-crema/30">
+            Equipo que avanza (tras ET/penales si aplica)
+          </p>
+          <select
+            value={clasificado}
+            onChange={(e) => setClasificado(e.target.value)}
+            className="w-full rounded-lg border border-cancha-600 bg-cancha-700 px-3 py-1.5 text-sm text-crema outline-none focus:border-lima"
+          >
+            <option value="">— Sin definir —</option>
+            <option value={partido.equipo_local}>{partido.equipo_local}</option>
+            <option value={partido.equipo_visitante}>{partido.equipo_visitante}</option>
+          </select>
+        </div>
+      )}
+
       <div className="mt-2 flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm text-crema/70">
           <input
@@ -1169,7 +1203,6 @@ function FilaAdmin({ partido, usuarios, conProno }: {
           </button>
         </div>
       </div>
-
     </div>
   );
 }

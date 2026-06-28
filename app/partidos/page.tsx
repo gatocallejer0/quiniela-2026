@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import type { Partido, Pronostico } from "@/lib/types";
+import { calcularPuntos } from "@/lib/scoring";
 
 const TZ = "America/Guatemala";
 
@@ -40,18 +41,6 @@ function fmtFecha(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(d);
-}
-
-function puntosDe(p: Partido, pr?: Pronostico): number | null {
-  if (!p.finalizado || !pr || p.goles_local_final == null) return null;
-  if (
-    pr.goles_local === p.goles_local_final &&
-    pr.goles_visitante === p.goles_visitante_final
-  )
-    return 3;
-  const signoPred = Math.sign(pr.goles_local - pr.goles_visitante);
-  const signoReal = Math.sign(p.goles_local_final - (p.goles_visitante_final ?? 0));
-  return signoPred === signoReal ? 1 : 0;
 }
 
 export default function Partidos() {
@@ -105,11 +94,17 @@ export default function Partidos() {
 
   if (cargando || !session) return null;
 
+  // Stats: un solo pase sobre los partidos finalizados con pronóstico
   const finalizados = partidos.filter((p) => p.finalizado && pronos[p.id]);
-  const totalPuntos = finalizados.reduce((sum, p) => sum + (puntosDe(p, pronos[p.id]) ?? 0), 0);
-  const exactos    = finalizados.filter((p) => puntosDe(p, pronos[p.id]) === 3).length;
-  const resultados = finalizados.filter((p) => puntosDe(p, pronos[p.id]) === 1).length;
-  const fallidos   = finalizados.length - exactos - resultados;
+  let totalPuntos = 0, exactos = 0, resultados = 0, ptsExactos = 0, ptsResultados = 0;
+  for (const p of finalizados) {
+    const d = calcularPuntos(p, pronos[p.id]);
+    if (!d) continue;
+    totalPuntos += d.total;
+    if (d.marcador === 3) { exactos++; ptsExactos += d.total; }
+    else if (d.marcador === 1) { resultados++; ptsResultados += d.total; }
+  }
+  const fallidos = finalizados.length - exactos - resultados;
 
   const fechaGT = (iso: string) =>
     new Intl.DateTimeFormat("es-GT", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" })
@@ -165,12 +160,12 @@ export default function Partidos() {
             <div className="flex flex-col items-center p-5 text-center hover:bg-cancha-700/50 transition-colors">
               <div className="font-mono text-3xl font-bold text-crema mb-1">{exactos}</div>
               <span className="rounded-full bg-lima px-2 py-0.5 text-[10px] font-black text-carbon">Exacto</span>
-              <div className="text-xs text-crema/40 mt-1">{exactos * 3} pts</div>
+              <div className="text-xs text-crema/40 mt-1">{ptsExactos} pts</div>
             </div>
             <div className="flex flex-col items-center p-5 text-center hover:bg-cancha-700/50 transition-colors">
               <div className="font-mono text-3xl font-bold text-crema mb-1">{resultados}</div>
               <span className="rounded-full bg-wc26-blue/20 px-2 py-0.5 text-[10px] font-black text-wc26-blue">Resultado</span>
-              <div className="text-xs text-crema/40 mt-1">{resultados} pts</div>
+              <div className="text-xs text-crema/40 mt-1">{ptsResultados} pts</div>
             </div>
             <div className="flex flex-col items-center p-5 text-center hover:bg-cancha-700/50 transition-colors">
               <div className="font-mono text-3xl font-bold text-crema mb-1">{fallidos}</div>
@@ -296,6 +291,8 @@ function CartaPartido({
   esAdmin: boolean;
   onGuardado: (p: Pronostico) => void;
 }) {
+  const esKnockout = partido.fase !== null;
+
   const iniciado = useMemo(
     () => new Date(partido.inicio).getTime() - 10 * 60 * 1000 <= Date.now(),
     [partido.inicio]
@@ -304,15 +301,21 @@ function CartaPartido({
 
   const [local, setLocal] = useState(prono ? String(prono.goles_local) : "");
   const [visita, setVisita] = useState(prono ? String(prono.goles_visitante) : "");
+  const [clasificadoPred, setClasificadoPred] = useState(prono?.clasificado ?? "");
   const [estado, setEstado] = useState<"" | "guardando" | "ok" | "error">("");
   const [msg, setMsg] = useState("");
 
-  const pts = puntosDe(partido, prono);
+  const desglose = calcularPuntos(partido, prono);
 
   async function guardar() {
     if (local === "" || visita === "") {
       setEstado("error");
       setMsg("Pon ambos marcadores.");
+      return;
+    }
+    if (esKnockout && !clasificadoPred) {
+      setEstado("error");
+      setMsg("Selecciona el equipo que avanza.");
       return;
     }
     setEstado("guardando");
@@ -321,6 +324,7 @@ function CartaPartido({
       partido_id: partido.id,
       goles_local: Number(local),
       goles_visitante: Number(visita),
+      clasificado: esKnockout ? clasificadoPred : null,
     };
     const { data: saved, error } = await supabase
       .from("pronosticos")
@@ -340,17 +344,18 @@ function CartaPartido({
     }
   }
 
-  // Color del borde izquierdo segun resultado
+  // Color del borde izquierdo según resultado
   const borderColor =
-    pts === 3 ? "border-l-lima" :
-    pts === 1 ? "border-l-wc26-blue" :
-    pts === 0 ? "border-l-wc26-red" :
-    iniciado && !partido.finalizado ? "border-l-wc26-gold" :
+    desglose?.marcador === 3                                         ? "border-l-lima"      :
+    desglose?.marcador === 1                                         ? "border-l-wc26-blue" :
+    desglose?.marcador === 0 && desglose.clasificadoBonus === 2     ? "border-l-wc26-gold" :
+    desglose?.marcador === 0                                         ? "border-l-wc26-red"  :
+    iniciado && !partido.finalizado                                  ? "border-l-wc26-gold" :
     "border-l-cancha-600";
 
   return (
     <div className={`border-l-4 ${borderColor} bg-cancha-800 rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-200`}>
-      {/* Header: fecha y grupo */}
+      {/* Header: fecha y grupo/fase */}
       <div className="flex items-center justify-between bg-cancha-700/40 px-6 py-3">
         <span className="text-xs font-mono text-crema/40">{fmtFecha(partido.inicio)}</span>
         <span className="rounded bg-cancha-600/50 px-2 py-0.5 text-xs text-crema/60">
@@ -408,19 +413,74 @@ function CartaPartido({
         </div>
       </div>
 
-      {/* Footer segun estado */}
+      {/* Selector de clasificado (solo fases eliminatorias) */}
+      {esKnockout && (
+        <div className="px-6 pb-6">
+          {bloqueado ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-cancha-700/40 px-4 py-2.5">
+              <span className="text-xs text-crema/40">Avanza (tu pronóstico):</span>
+              <span className="text-sm font-semibold text-crema">
+                {clasificadoPred ? <>{bandera(clasificadoPred)} {clasificadoPred}</> : "—"}
+              </span>
+            </div>
+          ) : (
+            <div>
+              <span className="block mb-2 text-xs font-semibold uppercase tracking-wide text-crema/40">
+                ¿Quién avanza a la siguiente ronda?
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {[partido.equipo_local, partido.equipo_visitante].map((eq) => (
+                  <button
+                    key={eq}
+                    type="button"
+                    onClick={() => setClasificadoPred(eq)}
+                    className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                      clasificadoPred === eq
+                        ? "border-lima bg-lima/10 text-lima"
+                        : "border-cancha-600 text-crema/60 hover:border-lima/40 hover:text-crema"
+                    }`}
+                  >
+                    {bandera(eq)} {eq}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Footer según estado */}
       {partido.finalizado && partido.goles_local_final != null ? (
         <div className="flex items-center justify-between bg-lima/5 border-t border-cancha-600/30 px-6 py-3">
-          <span className="text-sm text-crema/60">
-            Final: <strong className="text-crema">{partido.goles_local_final} &ndash; {partido.goles_visitante_final}</strong>
-          </span>
-          {pts != null ? (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm text-crema/60">
+              {esKnockout ? "90 min:" : "Final:"}{" "}
+              <strong className="text-crema">
+                {partido.goles_local_final} &ndash; {partido.goles_visitante_final}
+              </strong>
+            </span>
+            {esKnockout && partido.clasificado && (
+              <span className="text-xs text-crema/50">
+                Clasifica:{" "}
+                <strong className={desglose?.clasificadoBonus === 2 ? "text-lima" : "text-crema/70"}>
+                  {bandera(partido.clasificado)} {partido.clasificado}
+                </strong>
+                {prono?.clasificado && prono.clasificado !== partido.clasificado && (
+                  <span className="text-crema/30"> (predijiste {prono.clasificado})</span>
+                )}
+              </span>
+            )}
+          </div>
+          {desglose != null ? (
             <span className={`rounded-full px-3 py-1 text-xs font-black ${
-              pts === 3 ? "bg-lima text-carbon"            :
-              pts === 1 ? "bg-wc26-blue/20 text-wc26-blue" :
-                          "bg-wc26-red/20 text-wc26-red"
+              desglose.marcador === 3                                     ? "bg-lima text-carbon"            :
+              desglose.marcador === 1                                     ? "bg-wc26-blue/20 text-wc26-blue" :
+              desglose.clasificadoBonus === 2                             ? "bg-wc26-gold/20 text-wc26-gold" :
+                                                                           "bg-wc26-red/20 text-wc26-red"
             }`}>
-              {pts === 3 ? "Exacto" : pts === 1 ? "Resultado" : "Fallido"}&nbsp;&nbsp;{pts > 0 ? `+${pts}` : "0"} pt{pts === 1 ? "" : "s"}
+              {desglose.marcador === 3 ? "Exacto" : desglose.marcador === 1 ? "Resultado" : "Fallido"}
+              {desglose.clasificadoBonus === 2 && " + Clasificado"}
+              &nbsp;&nbsp;{desglose.total > 0 ? `+${desglose.total}` : "0"} pt{desglose.total !== 1 ? "s" : ""}
             </span>
           ) : (
             <span className="text-xs text-crema/30">Sin pronostico</span>
