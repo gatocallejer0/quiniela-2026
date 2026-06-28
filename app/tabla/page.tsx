@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import type { FilaTabla, PuntosAdicional } from "@/lib/types";
+
+const GraficaEvolucion = dynamic(
+  () => import("@/components/GraficaEvolucion").then((m) => m.GraficaEvolucion),
+  { ssr: false }
+);
 
 
 export default function Tabla() {
@@ -82,6 +88,11 @@ export default function Tabla() {
     <div className="aparece">
       <h1 className="font-display mb-1 text-5xl text-lima uppercase">Tabla</h1>
       <p className="mb-6 text-sm text-crema/50">Posiciones de la familia.</p>
+
+      {/* Gráfica de evolución — se monta en cliente, no espera a cargandoData */}
+      {!cargando && session && (
+        <GraficaEvolucion currentUid={session.user.id} />
+      )}
 
       {cargandoData ? (
         <p className="text-crema/40">Cargando...</p>
