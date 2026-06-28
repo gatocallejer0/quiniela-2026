@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import type { FilaTabla, PuntosAdicional } from "@/lib/types";
+import { QuienesFaltan } from "@/components/QuienesFaltan";
 
 const DonaDesglose = dynamic(
   () => import("@/components/DonaDesglose").then((m) => m.DonaDesglose),
@@ -140,6 +141,10 @@ export default function Tabla() {
                 Todavia sin participantes.
               </p>
             )}
+          </div>
+
+          <div className="mt-8">
+            <QuienesFaltan />
           </div>
 
           {/* Puntos adicionales */}
