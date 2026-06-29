@@ -13,15 +13,20 @@ import { supabase } from "@/lib/supabase";
 import { calcularPuntos } from "@/lib/scoring";
 import type { Partido, Pronostico } from "@/lib/types";
 
-type Perfil = { id: string; nombre: string };
+type Perfil          = { id: string; nombre: string };
+type PtosAd          = { usuario_id: string; puntos: number };
 
 const SEG = [
-  { key: "exactos",    label: "Exacto",     color: "#c6ff3a" },
-  { key: "resultados", label: "Resultado",  color: "#60a5fa" },
-  { key: "clasificado",label: "Clasificado", color: "#fbbf24" },
+  { key: "exactos",    label: "Exacto",       color: "#c6ff3a" },
+  { key: "resultados", label: "Resultado",    color: "#60a5fa" },
+  { key: "extra",      label: "Puntos extra", color: "#fbbf24" },
 ] as const;
 
-function calcularDesglose(partidos: Partido[], pronos: Pronostico[]) {
+function calcularDesglose(
+  partidos: Partido[],
+  pronos: Pronostico[],
+  ptosAdicionales: number,
+) {
   const map: Record<number, Pronostico> = {};
   pronos.forEach((p) => { map[p.partido_id] = p; });
 
@@ -33,7 +38,8 @@ function calcularDesglose(partidos: Partido[], pronos: Pronostico[]) {
     if (d.marcador === 1) resultados += 1 * d.multiplicador;
     clasificado += d.clasificadoBonus * d.multiplicador;
   }
-  return { exactos, resultados, clasificado, total: exactos + resultados + clasificado };
+  const extra = clasificado + ptosAdicionales;
+  return { exactos, resultados, extra, total: exactos + resultados + extra };
 }
 
 // ── Tooltip ────────────────────────────────────────────────────────────────
@@ -94,15 +100,16 @@ function LabelCentral({ viewBox, total }: { viewBox?: any; total: number }) {
 
 // ── Componente principal ───────────────────────────────────────────────────
 export function DonaDesglose({ currentUid }: { currentUid: string }) {
-  const [partidos,  setPartidos]  = useState<Partido[]>([]);
-  const [allPronos, setAllPronos] = useState<Pronostico[]>([]);
-  const [perfiles,  setPerfiles]  = useState<Perfil[]>([]);
-  const [selected,  setSelected]  = useState(currentUid);
-  const [loading,   setLoading]   = useState(true);
+  const [partidos,   setPartidos]   = useState<Partido[]>([]);
+  const [allPronos,  setAllPronos]  = useState<Pronostico[]>([]);
+  const [perfiles,   setPerfiles]   = useState<Perfil[]>([]);
+  const [allPtosAd,  setAllPtosAd]  = useState<PtosAd[]>([]);
+  const [selected,   setSelected]   = useState(currentUid);
+  const [loading,    setLoading]    = useState(true);
 
   useEffect(() => {
     (async () => {
-      const [{ data: ps }, { data: prs }, { data: pfs }] = await Promise.all([
+      const [{ data: ps }, { data: prs }, { data: pfs }, { data: pad }] = await Promise.all([
         supabase
           .from("partidos")
           .select("*")
@@ -110,22 +117,29 @@ export function DonaDesglose({ currentUid }: { currentUid: string }) {
           .order("inicio", { ascending: true }),
         supabase.from("pronosticos").select("*"),
         supabase.from("perfiles").select("id, nombre").order("nombre"),
+        supabase.from("puntos_adicionales").select("usuario_id, puntos"),
       ]);
       setPartidos((ps as Partido[]) ?? []);
       setAllPronos((prs as Pronostico[]) ?? []);
       setPerfiles((pfs as Perfil[]) ?? []);
+      setAllPtosAd((pad as PtosAd[]) ?? []);
       setLoading(false);
     })();
   }, []);
 
   const pronos = useMemo(
     () => allPronos.filter((p) => p.usuario_id === selected),
-    [allPronos, selected]
+    [allPronos, selected],
+  );
+
+  const ptosAdicionales = useMemo(
+    () => allPtosAd.find((p) => p.usuario_id === selected)?.puntos ?? 0,
+    [allPtosAd, selected],
   );
 
   const desglose = useMemo(
-    () => calcularDesglose(partidos, pronos),
-    [partidos, pronos]
+    () => calcularDesglose(partidos, pronos, ptosAdicionales),
+    [partidos, pronos, ptosAdicionales],
   );
 
   const pieData = useMemo(() => {

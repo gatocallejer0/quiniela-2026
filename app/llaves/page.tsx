@@ -214,7 +214,7 @@ export default function Llaves() {
         supabase
           .from("partidos")
           .select("*")
-          .in("fase", ["Dieciseisavos", "Octavos", "Cuartos", "Semifinal", "Final"])
+          .in("fase", ["Dieciseisavos", "Octavos", "Cuartos", "Semifinal", "Tercero", "Final"])
           .order("inicio", { ascending: true }),
         supabase
           .from("pronosticos")
