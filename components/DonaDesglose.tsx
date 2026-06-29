@@ -95,33 +95,53 @@ function LabelCentral({ viewBox, total }: { viewBox?: any; total: number }) {
 // ── Componente principal ───────────────────────────────────────────────────
 export function DonaDesglose({ currentUid }: { currentUid: string }) {
   const [partidos,  setPartidos]  = useState<Partido[]>([]);
-  const [allPronos, setAllPronos] = useState<Pronostico[]>([]);
+  const [pronos,    setPronos]    = useState<Pronostico[]>([]);
   const [perfiles,  setPerfiles]  = useState<Perfil[]>([]);
   const [selected,  setSelected]  = useState(currentUid);
   const [loading,   setLoading]   = useState(true);
+  const [loadingPronos, setLoadingPronos] = useState(false);
 
+  // Carga inicial: partidos finalizados + perfiles
   useEffect(() => {
     (async () => {
-      const [{ data: ps }, { data: prs }, { data: pfs }] = await Promise.all([
+      const [{ data: ps }, { data: pfs }] = await Promise.all([
         supabase
           .from("partidos")
           .select("*")
           .eq("finalizado", true)
           .order("inicio", { ascending: true }),
-        supabase.from("pronosticos").select("*"),
         supabase.from("perfiles").select("id, nombre").order("nombre"),
       ]);
       setPartidos((ps as Partido[]) ?? []);
-      setAllPronos((prs as Pronostico[]) ?? []);
       setPerfiles((pfs as Perfil[]) ?? []);
       setLoading(false);
     })();
   }, []);
 
-  const pronos = useMemo(
-    () => allPronos.filter((p) => p.usuario_id === selected),
-    [allPronos, selected],
-  );
+  // Re-fetch pronósticos cuando cambia el usuario seleccionado.
+  // Filtramos server-side por usuario_id para evitar el límite de 1000 filas.
+  useEffect(() => {
+    if (!selected) return;
+    setLoadingPronos(true);
+    (async () => {
+      let all: Pronostico[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("pronosticos")
+          .select("*")
+          .eq("usuario_id", selected)
+          .range(from, from + PAGE - 1);
+        const rows = (data as Pronostico[]) ?? [];
+        all = all.concat(rows);
+        if (rows.length < PAGE) break;
+        from += PAGE;
+      }
+      setPronos(all);
+      setLoadingPronos(false);
+    })();
+  }, [selected]);
 
   const desglose = useMemo(
     () => calcularDesglose(partidos, pronos),
@@ -140,6 +160,7 @@ export function DonaDesglose({ currentUid }: { currentUid: string }) {
 
   const nombreSeleccionado = perfiles.find((p) => p.id === selected)?.nombre ?? "";
   const esPropio = selected === currentUid;
+  const cargando = loading || loadingPronos;
 
   if (loading) {
     return (
@@ -149,7 +170,7 @@ export function DonaDesglose({ currentUid }: { currentUid: string }) {
     );
   }
 
-  if (desglose.total === 0 && !loading) {
+  if (desglose.total === 0 && !cargando) {
     return (
       <div className="mb-8 overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
         <CabeceraYSelector
@@ -160,7 +181,9 @@ export function DonaDesglose({ currentUid }: { currentUid: string }) {
           esPropio={esPropio}
           nombre={nombreSeleccionado}
         />
-        <p className="px-6 pb-8 text-sm text-crema/30">Sin puntos aún.</p>
+        <p className="px-6 pb-8 text-sm text-crema/30">
+          {loadingPronos ? "Cargando..." : "Sin puntos aún."}
+        </p>
       </div>
     );
   }
@@ -206,44 +229,47 @@ export function DonaDesglose({ currentUid }: { currentUid: string }) {
 
         {/* Leyenda con detalle */}
         <div className="flex w-full flex-col gap-3">
-          {SEG.map((s) => {
-            const val = desglose[s.key];
-            const pct = desglose.total > 0 ? Math.round((val / desglose.total) * 100) : 0;
-            return (
-              <div key={s.key} className="flex items-center gap-3">
-                <span
-                  className="h-3 w-3 shrink-0 rounded-full"
-                  style={{ background: s.color, opacity: val === 0 ? 0.2 : 1 }}
-                />
-                <div className="flex-1">
-                  <div className="flex items-baseline justify-between">
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: val > 0 ? s.color : "rgba(255,255,255,0.2)" }}
-                    >
-                      {s.label}
-                    </span>
-                    <span
-                      className="font-mono text-base font-bold tabular"
-                      style={{ color: val > 0 ? s.color : "rgba(255,255,255,0.15)" }}
-                    >
-                      {val} pts
-                    </span>
+          {loadingPronos ? (
+            <p className="text-sm text-crema/30">Actualizando...</p>
+          ) : (
+            SEG.map((s) => {
+              const val = desglose[s.key];
+              const pct = desglose.total > 0 ? Math.round((val / desglose.total) * 100) : 0;
+              return (
+                <div key={s.key} className="flex items-center gap-3">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ background: s.color, opacity: val === 0 ? 0.2 : 1 }}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-baseline justify-between">
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: val > 0 ? s.color : "rgba(255,255,255,0.2)" }}
+                      >
+                        {s.label}
+                      </span>
+                      <span
+                        className="font-mono text-base font-bold tabular"
+                        style={{ color: val > 0 ? s.color : "rgba(255,255,255,0.15)" }}
+                      >
+                        {val} pts
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-cancha-700">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${pct}%`, background: s.color, opacity: val === 0 ? 0 : 0.8 }}
+                      />
+                    </div>
                   </div>
-                  {/* Barra de progreso */}
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-cancha-700">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${pct}%`, background: s.color, opacity: val === 0 ? 0 : 0.8 }}
-                    />
-                  </div>
+                  <span className="w-9 text-right font-mono text-xs text-crema/30 tabular">
+                    {pct}%
+                  </span>
                 </div>
-                <span className="w-9 text-right font-mono text-xs text-crema/30 tabular">
-                  {pct}%
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
