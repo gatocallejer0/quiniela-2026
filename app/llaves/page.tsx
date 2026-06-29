@@ -5,185 +5,207 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import type { Partido, Pronostico } from "@/lib/types";
-import {
-  BRACKET,
-  FASES,
-  FASE_LABEL,
-  resolverEquipos,
-  type BracketSlot,
-  type Fase,
-} from "@/lib/bracket";
+import { BRACKET, resolverEquipos, type BracketSlot } from "@/lib/bracket";
 
-const TZ = "America/Guatemala";
+// ── Layout constants ─────────────────────────────────────────────────────────
+const CARD_W  = 148;   // match card width (px)
+const CARD_H  = 58;    // match card height (px)
+const SLOT_H  = 80;    // base vertical slot per match in round 0 (doubles each round)
+const H_GAP   = 44;    // horizontal gap between round columns (connector lines live here)
+const COL_W   = CARD_W + H_GAP;
+const LABEL_H = 28;    // round label strip height
+const TOTAL_H = 16 * SLOT_H;            // 1280px — full bracket height
+const TOTAL_W = 5 * CARD_W + 4 * H_GAP; // 916px  — full bracket width
 
+// ── Bracket round configuration ─────────────────────────────────────────────
+const ROUND_IDS = [
+  ["D01","D02","D03","D04","D05","D06","D07","D08",
+   "D09","D10","D11","D12","D13","D14","D15","D16"],
+  ["O1","O2","O3","O4","O5","O6","O7","O8"],
+  ["QF1","QF2","QF3","QF4"],
+  ["SF1","SF2"],
+  ["F1"],
+] as const;
+
+const ROUND_LABELS = ["Dieciseisavos","Octavos","Cuartos","Semifinal","Final"];
+
+// ── Position helpers ─────────────────────────────────────────────────────────
+function slotCY(round: number, pos: number): number {
+  const h = SLOT_H * Math.pow(2, round);
+  return h * pos + h / 2;
+}
+function colX(round: number): number { return round * COL_W; }
+
+// ── Flags ────────────────────────────────────────────────────────────────────
 const BANDERAS: Record<string, string> = {
   "Alemania":"🇩🇪","Arabia Saudita":"🇸🇦","Argelia":"🇩🇿","Argentina":"🇦🇷",
   "Australia":"🇦🇺","Austria":"🇦🇹","Bélgica":"🇧🇪","Bosnia y Herzegovina":"🇧🇦",
   "Brasil":"🇧🇷","Cabo Verde":"🇨🇻","Canadá":"🇨🇦","Colombia":"🇨🇴",
   "Corea del Sur":"🇰🇷","Costa de Marfil":"🇨🇮","Croacia":"🇭🇷","Curazao":"🇨🇼",
-  "Ecuador":"🇪🇨","Egipto":"🇪🇬","Escocia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","España":"🇪🇸","Estados Unidos":"🇺🇸",
-  "Francia":"🇫🇷","Ghana":"🇬🇭","Haití":"🇭🇹","Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Irán":"🇮🇷",
-  "Irak":"🇮🇶","Japón":"🇯🇵","Jordania":"🇯🇴","Marruecos":"🇲🇦","México":"🇲🇽",
-  "Nigeria":"🇳🇬","Noruega":"🇳🇴","Nueva Zelanda":"🇳🇿","Países Bajos":"🇳🇱",
-  "Panamá":"🇵🇦","Paraguay":"🇵🇾","Portugal":"🇵🇹","Qatar":"🇶🇦","RD Congo":"🇨🇩",
-  "República Checa":"🇨🇿","Senegal":"🇸🇳","Sudáfrica":"🇿🇦","Suecia":"🇸🇪",
-  "Suiza":"🇨🇭","Túnez":"🇹🇳","Turquía":"🇹🇷","Uruguay":"🇺🇾","Uzbekistán":"🇺🇿",
+  "Ecuador":"🇪🇨","Egipto":"🇪🇬","España":"🇪🇸","Estados Unidos":"🇺🇸",
+  "Francia":"🇫🇷","Ghana":"🇬🇭","Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Irán":"🇮🇷",
+  "Japón":"🇯🇵","Marruecos":"🇲🇦","México":"🇲🇽","Nigeria":"🇳🇬",
+  "Noruega":"🇳🇴","Países Bajos":"🇳🇱","Paraguay":"🇵🇾","Portugal":"🇵🇹",
+  "RD Congo":"🇨🇩","Senegal":"🇸🇳","Sudáfrica":"🇿🇦","Suecia":"🇸🇪",
+  "Suiza":"🇨🇭","Turquía":"🇹🇷","Uruguay":"🇺🇾",
 };
 const fl = (e: string | null) => (e ? (BANDERAS[e] ?? "🏳️") : "");
 
-function fmtFecha(iso: string): string {
-  return new Intl.DateTimeFormat("es-GT", {
-    timeZone: TZ,
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
+// ── SVG connector lines ───────────────────────────────────────────────────────
+function BracketLines() {
+  const paths: string[] = [];
+  ROUND_IDS.forEach((ids, rIdx) => {
+    if (rIdx >= ROUND_IDS.length - 1) return;
+    (ids as readonly string[]).forEach((_, pos) => {
+      const x1   = colX(rIdx) + CARD_W;
+      const y1   = slotCY(rIdx, pos);
+      const x2   = colX(rIdx + 1);
+      const y2   = slotCY(rIdx + 1, Math.floor(pos / 2));
+      const midX = (x1 + x2) / 2;
+      paths.push(`M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`);
+    });
+  });
+  return (
+    <>
+      {paths.map((d, i) => (
+        <path key={i} d={d} stroke="rgba(198,255,58,0.13)" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+      ))}
+    </>
+  );
 }
 
-// ── Tarjeta de un cruce ────────────────────────────────────────────────────
-function TarjetaCruce({
+// ── Compact bracket match card ────────────────────────────────────────────────
+function BracketCard({
   slot,
   pm,
   pronoClasificado,
-  currentUid,
+  round,
+  pos,
 }: {
   slot: BracketSlot;
   pm: Map<number, Partido>;
   pronoClasificado: Map<number, string | null>;
-  currentUid: string;
+  round: number;
+  pos: number;
 }) {
-  const partido = slot.partidoId != null ? pm.get(slot.partidoId) ?? null : null;
   const { local, visitante } = resolverEquipos(slot, pm);
+  const partido  = slot.partidoId != null ? pm.get(slot.partidoId) ?? null : null;
+  const ganador  = partido?.clasificado ?? null;
+  const pick     = slot.partidoId != null ? pronoClasificado.get(slot.partidoId) ?? null : null;
 
-  const ahora = Date.now();
-  const cierreMs = partido ? new Date(partido.inicio).getTime() - 10 * 60 * 1000 : null;
-  const enCurso  = partido && !partido.finalizado && new Date(partido.inicio).getTime() <= ahora;
-  const pronto   = partido && !partido.finalizado && cierreMs && cierreMs <= ahora && !enCurso;
+  const isLocalW     = !!(ganador && ganador === local);
+  const isVisitanteW = !!(ganador && ganador === visitante);
 
-  const ganador = partido?.clasificado ?? null;
-  const pick    = slot.partidoId != null ? (pronoClasificado.get(slot.partidoId) ?? null) : null;
+  const score =
+    partido?.finalizado && partido.goles_local_final != null
+      ? `${partido.goles_local_final}-${partido.goles_visitante_final ?? 0}`
+      : null;
 
-  // Status badge
-  let statusLabel: string;
-  let statusColor: string;
-  if (!partido) {
-    statusLabel = "Por jugar";
-    statusColor = "text-crema/30";
-  } else if (partido.finalizado) {
-    statusLabel = "Finalizado";
-    statusColor = "text-lima/70";
-  } else if (enCurso) {
-    statusLabel = "En curso";
-    statusColor = "text-wc26-red";
-  } else {
-    statusLabel = fmtFecha(partido.inicio);
-    statusColor = "text-crema/40";
-  }
+  const pickOk = partido?.finalizado && ganador && pick ? pick === ganador : null;
+  const pickColor = pickOk === true ? "#c6ff3a" : pickOk === false ? "#ef4444" : null;
 
-  // Pick correctness
-  let pickIcon: string | null = null;
-  if (partido?.finalizado && ganador && pick) {
-    pickIcon = pick === ganador ? "✓" : "✗";
-  }
-
-  const esLocal    = ganador && ganador === local;
-  const esVisitante = ganador && ganador === visitante;
+  const left = colX(round);
+  const top  = slotCY(round, pos) - CARD_H / 2;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800 transition hover:-translate-y-0.5 hover:shadow-card-hover">
-      {/* Cabecera */}
-      <div className="flex items-center justify-between bg-cancha-700/40 px-4 py-2">
-        <span className="text-[10px] font-mono uppercase tracking-widest text-crema/40">
-          {slot.id}
-        </span>
-        <span
-          className={`flex items-center gap-1 text-xs font-semibold ${statusColor}`}
-        >
-          {enCurso && (
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-wc26-red" />
-          )}
-          {statusLabel}
+    <div
+      style={{ position: "absolute", left, top, width: CARD_W, height: CARD_H }}
+      className="flex flex-col overflow-hidden rounded-lg border border-cancha-600/30 bg-cancha-800"
+    >
+      {/* Local */}
+      <div className={`flex flex-1 items-center gap-1.5 px-2 ${isVisitanteW ? "opacity-25" : ""}`}>
+        <span className="text-sm leading-none shrink-0">{fl(local)}</span>
+        <span className={`text-[11px] truncate leading-none ${isLocalW ? "font-bold text-crema" : "text-crema/60"}`}>
+          {local ?? <span className="italic text-crema/25">Por det.</span>}
         </span>
       </div>
 
-      {/* Equipos + marcador */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5">
-        {/* Local */}
-        <div className={`flex flex-col gap-0.5 ${esLocal ? "" : ganador ? "opacity-40" : ""}`}>
-          <span className="text-2xl leading-none">{fl(local)}</span>
-          <span
-            className={`text-sm leading-snug ${
-              esLocal ? "font-bold text-crema" : "font-medium text-crema/70"
-            }`}
-          >
-            {local ?? <span className="italic text-crema/30">Por det.</span>}
-          </span>
-          {esLocal && (
-            <span className="text-[10px] font-bold text-lima">↑ clasifica</span>
-          )}
-        </div>
-
-        {/* Centro: marcador o separador */}
-        <div className="flex flex-col items-center gap-1 text-center">
-          {partido?.finalizado && partido.goles_local_final != null ? (
-            <span className="font-mono text-2xl font-bold text-crema tabular">
-              {partido.goles_local_final}
-              <span className="mx-1 text-cancha-600">·</span>
-              {partido.goles_visitante_final}
+      {/* Divider — score badge floats on it */}
+      <div className="relative flex-shrink-0">
+        <div className="h-px bg-cancha-600/20" />
+        {score && (
+          <div className="absolute inset-x-0 -top-2.5 flex justify-center pointer-events-none">
+            <span className="rounded bg-cancha-700 px-1 py-px font-mono text-[9px] text-crema/50 leading-none">
+              {score}
             </span>
-          ) : partido && !partido.finalizado ? (
-            <span className="text-base font-semibold text-crema/30">vs</span>
-          ) : (
-            <span className="text-xs text-crema/20">vs</span>
-          )}
-          <span className="text-[9px] uppercase tracking-widest text-crema/20">
-            {slot.fase === "Dieciseisavos" ? "90 min" : ""}
-          </span>
-        </div>
-
-        {/* Visitante */}
-        <div
-          className={`flex flex-col items-end gap-0.5 text-right ${
-            esVisitante ? "" : ganador ? "opacity-40" : ""
-          }`}
-        >
-          <span className="text-2xl leading-none">{fl(visitante)}</span>
-          <span
-            className={`text-sm leading-snug ${
-              esVisitante ? "font-bold text-crema" : "font-medium text-crema/70"
-            }`}
-          >
-            {visitante ?? <span className="italic text-crema/30">Por det.</span>}
-          </span>
-          {esVisitante && (
-            <span className="text-[10px] font-bold text-lima">↑ clasifica</span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Badge de pick del usuario (PASO 5) */}
-      {slot.partidoId != null && (
-        <div className="border-t border-cancha-600/20 px-4 py-2.5">
-          {pick ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-crema/40">Tu pick:</span>
-              <span className="text-xs font-semibold text-crema/80">
-                {fl(pick)} {pick}
-              </span>
-              {pickIcon && (
-                <span
-                  className={`ml-auto text-sm font-black ${
-                    pickIcon === "✓" ? "text-lima" : "text-wc26-red"
-                  }`}
-                >
-                  {pickIcon}
-                </span>
-              )}
-            </div>
+      {/* Visitante */}
+      <div className={`flex flex-1 items-center gap-1.5 px-2 ${isLocalW ? "opacity-25" : ""}`}>
+        <span className="text-sm leading-none shrink-0">{fl(visitante)}</span>
+        <span className={`text-[11px] truncate leading-none ${isVisitanteW ? "font-bold text-crema" : "text-crema/60"}`}>
+          {visitante ?? <span className="italic text-crema/25">Por det.</span>}
+        </span>
+      </div>
+
+      {/* Pick indicator */}
+      {pickColor && (
+        <span
+          className="absolute right-1.5 bottom-1 font-mono text-[10px] font-black"
+          style={{ color: pickColor }}
+        >
+          {pickOk ? "✓" : "✗"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Third-place card ─────────────────────────────────────────────────────────
+function ThirdPlaceCard({
+  slot,
+  pm,
+  pronoClasificado,
+}: {
+  slot: BracketSlot;
+  pm: Map<number, Partido>;
+  pronoClasificado: Map<number, string | null>;
+}) {
+  const partido  = slot.partidoId != null ? pm.get(slot.partidoId) ?? null : null;
+  const { local, visitante } = resolverEquipos(slot, pm);
+  const ganador  = partido?.clasificado ?? null;
+  const pick     = slot.partidoId != null ? pronoClasificado.get(slot.partidoId) ?? null : null;
+  const pickOk   = partido?.finalizado && ganador && pick ? pick === ganador : null;
+
+  if (!partido) {
+    return (
+      <div className="rounded-xl border border-cancha-600/20 bg-cancha-800/40 px-5 py-4 text-center">
+        <p className="text-sm text-crema/30">Se definirá tras las semifinales.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-4">
+        <div className={ganador && ganador !== local ? "opacity-30" : ""}>
+          <div className="text-xl">{fl(local)}</div>
+          <div className="text-sm font-semibold text-crema truncate">{local ?? "Por det."}</div>
+        </div>
+        <div className="text-center">
+          {partido.finalizado && partido.goles_local_final != null ? (
+            <span className="font-mono text-xl font-bold text-crema">
+              {partido.goles_local_final}·{partido.goles_visitante_final ?? 0}
+            </span>
           ) : (
-            <span className="text-xs text-crema/25 italic">Sin pronóstico</span>
+            <span className="text-crema/30 text-sm">vs</span>
+          )}
+        </div>
+        <div className={`text-right ${ganador && ganador !== visitante ? "opacity-30" : ""}`}>
+          <div className="text-xl">{fl(visitante)}</div>
+          <div className="text-sm font-semibold text-crema truncate">{visitante ?? "Por det."}</div>
+        </div>
+      </div>
+      {pick && (
+        <div className="border-t border-cancha-600/20 px-5 py-2 flex items-center gap-2">
+          <span className="text-xs text-crema/40">Tu pick:</span>
+          <span className="text-xs font-semibold text-crema/80">{fl(pick)} {pick}</span>
+          {pickOk !== null && (
+            <span className={`ml-auto font-black text-sm ${pickOk ? "text-lima" : "text-wc26-red"}`}>
+              {pickOk ? "✓" : "✗"}
+            </span>
           )}
         </div>
       )}
@@ -191,15 +213,14 @@ function TarjetaCruce({
   );
 }
 
-// ── Página principal ───────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function Llaves() {
   const { session, cargando } = useAuth();
   const router = useRouter();
 
-  const [partidos,  setPartidos]  = useState<Partido[]>([]);
-  const [pronos,    setPronos]    = useState<Pronostico[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [faseActiva, setFaseActiva] = useState<Fase>("Dieciseisavos");
+  const [partidos, setPartidos] = useState<Partido[]>([]);
+  const [pronos,   setPronos]   = useState<Pronostico[]>([]);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     if (!cargando && !session) router.replace("/");
@@ -209,12 +230,11 @@ export default function Llaves() {
     if (!session) return;
     (async () => {
       const knockoutIds = BRACKET.map((s) => s.partidoId).filter(Boolean) as number[];
-
       const [{ data: ps }, { data: prs }] = await Promise.all([
         supabase
           .from("partidos")
           .select("*")
-          .in("fase", ["Dieciseisavos", "Octavos", "Cuartos", "Semifinal", "Tercero", "Final"])
+          .in("fase", ["Dieciseisavos","Octavos","Cuartos","Semifinal","Tercero","Final"])
           .order("inicio", { ascending: true }),
         supabase
           .from("pronosticos")
@@ -222,7 +242,6 @@ export default function Llaves() {
           .eq("usuario_id", session.user.id)
           .in("partido_id", knockoutIds.length ? knockoutIds : [-1]),
       ]);
-
       setPartidos((ps as Partido[]) ?? []);
       setPronos((prs as Pronostico[]) ?? []);
       setLoading(false);
@@ -241,86 +260,87 @@ export default function Llaves() {
     return m;
   }, [pronos]);
 
-  const slotsDeFase = useMemo(
-    () => BRACKET.filter((s) => s.fase === faseActiva),
-    [faseActiva]
-  );
+  const slotMap = useMemo(() => {
+    const m = new Map<string, BracketSlot>();
+    BRACKET.forEach((s) => m.set(s.id, s));
+    return m;
+  }, []);
+
+  const t1 = slotMap.get("T1")!;
 
   if (cargando || !session) return null;
 
   return (
     <div className="aparece">
       <h1 className="font-display mb-1 text-5xl text-lima uppercase">Llaves</h1>
-      <p className="mb-5 text-sm text-crema/50">
-        Cuadro eliminatorio · Mundial 2026
-      </p>
+      <p className="mb-5 text-sm text-crema/50">Cuadro eliminatorio · Mundial 2026</p>
 
-      {/* Tabs de ronda */}
-      <div className="mb-6 -mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto">
-        <div className="flex gap-2 pb-1 min-w-max">
-          {FASES.map((fase) => {
-            const activo = fase === faseActiva;
-            // ¿Hay algún slot de esta fase con partido ya en BD?
-            const tienePartidos = BRACKET.filter((s) => s.fase === fase).some(
-              (s) => s.partidoId != null && pm.has(s.partidoId)
-            );
-            return (
-              <button
-                key={fase}
-                onClick={() => setFaseActiva(fase)}
-                className={`relative rounded-full px-5 py-2 text-sm font-bold transition ${
-                  activo
-                    ? "bg-lima text-carbon shadow-md"
-                    : "bg-cancha-700/60 text-crema/50 hover:text-crema"
-                }`}
-              >
-                {FASE_LABEL[fase]}
-                {tienePartidos && !activo && (
-                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lima" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Contenido de la ronda activa */}
       {loading ? (
         <p className="text-crema/40">Cargando llaves...</p>
       ) : (
         <>
-          {/* Encabezado de ronda */}
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-crema/70">{faseActiva}</h2>
-            <span className="text-xs text-crema/30">
-              {slotsDeFase.filter((s) => s.partidoId != null && pm.get(s.partidoId)?.finalizado).length}
-              {" / "}
-              {slotsDeFase.length} jugados
-            </span>
-          </div>
+          {/* ── Bracket organigrama ─────────────────────────────────────── */}
+          <div className="overflow-x-auto rounded-xl border border-cancha-600/20 bg-cancha-900/50 p-4 pb-6">
+            {/* Scroll hint on mobile */}
+            <p className="mb-3 text-[10px] text-crema/25 text-right md:hidden">
+              ← desliza para ver el cuadro →
+            </p>
 
-          {/* Lista de cruces */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            {slotsDeFase.map((slot) => (
-              <TarjetaCruce
-                key={slot.id}
-                slot={slot}
-                pm={pm}
-                pronoClasificado={pronoClasificado}
-                currentUid={session.user.id}
-              />
-            ))}
-          </div>
+            <div style={{ width: TOTAL_W, minWidth: TOTAL_W }}>
+              {/* Round labels */}
+              <div className="flex" style={{ height: LABEL_H }}>
+                {ROUND_LABELS.map((label, i) => (
+                  <div
+                    key={i}
+                    style={{ width: i < 4 ? COL_W : CARD_W, flexShrink: 0 }}
+                    className="flex items-center justify-center font-mono text-[9px] uppercase tracking-widest text-crema/30"
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
 
-          {/* Nota si no hay partidos en esta fase */}
-          {slotsDeFase.every((s) => s.partidoId == null || !pm.has(s.partidoId)) && (
-            <div className="mt-6 rounded-xl border border-cancha-600/20 bg-cancha-800/40 px-6 py-8 text-center">
-              <p className="text-2xl mb-2">🏆</p>
-              <p className="text-sm text-crema/40">
-                Los partidos de {faseActiva} se definirán cuando avancen los equipos.
-              </p>
+              {/* Bracket area */}
+              <div style={{ position: "relative", width: TOTAL_W, height: TOTAL_H }}>
+                {/* Connector lines */}
+                <svg
+                  style={{ position: "absolute", top: 0, left: 0, overflow: "visible" }}
+                  width={TOTAL_W}
+                  height={TOTAL_H}
+                >
+                  <BracketLines />
+                </svg>
+
+                {/* Match cards */}
+                {ROUND_IDS.map((ids, round) =>
+                  (ids as readonly string[]).map((slotId, pos) => {
+                    const slot = slotMap.get(slotId);
+                    if (!slot) return null;
+                    return (
+                      <BracketCard
+                        key={slotId}
+                        slot={slot}
+                        pm={pm}
+                        pronoClasificado={pronoClasificado}
+                        round={round}
+                        pos={pos}
+                      />
+                    );
+                  })
+                )}
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* ── Tercer lugar ─────────────────────────────────────────────── */}
+          <div className="mt-8">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-widest text-crema/40">
+              3er Lugar
+            </p>
+            <div className="max-w-sm">
+              <ThirdPlaceCard slot={t1} pm={pm} pronoClasificado={pronoClasificado} />
+            </div>
+          </div>
         </>
       )}
     </div>
