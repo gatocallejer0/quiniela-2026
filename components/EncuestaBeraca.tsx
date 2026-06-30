@@ -56,7 +56,7 @@ export function EncuestaBeraca() {
             <span className="text-3xl">🏠⚽</span>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-wc26-red/80">Convivencia</p>
-              <h2 className="font-display text-2xl uppercase text-crema">Final en Beraca</h2>
+              <h2 className="font-display text-2xl uppercase text-crema">Final en Beraca <span className="text-lg text-crema/50">(San Lucas Sac)</span></h2>
             </div>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function EncuestaBeraca() {
           {!guardado ? (
             <>
               <p className="text-base font-semibold text-crema">
-                ¿Vas a ver la Final del Mundial en Beraca?
+                ¿Vas a ver la Final del Mundial en Beraca (San Lucas Sac)?
               </p>
 
               {/* Botones Si / No */}
