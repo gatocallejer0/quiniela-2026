@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
@@ -38,7 +39,7 @@ function ModalEncuesta({
     }
   }
 
-  return (
+  const modal = (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-cancha-600/60 bg-cancha-900 shadow-2xl">
 
@@ -158,6 +159,8 @@ function ModalEncuesta({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
 
 // Popup inicial para quienes no han respondido
