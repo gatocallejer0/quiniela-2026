@@ -41,6 +41,8 @@ export default function Admin() {
   const [auditUserId, setAuditUserId] = useState("");
   const [auditPronos, setAuditPronos] = useState<Pronostico[]>([]);
   const [auditCargando, setAuditCargando] = useState(false);
+  const [encuestaAbierta, setEncuestaAbierta] = useState(false);
+  const [encuestaRespuestas, setEncuestaRespuestas] = useState<{ usuario_id: string; asiste: boolean; acompanantes: number; creado: string }[]>([]);
 
   useEffect(() => {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
@@ -107,6 +109,14 @@ export default function Admin() {
       setCargandoData(false);
     })();
   }, [perfil]);
+
+  async function cargarEncuesta() {
+    const { data } = await supabase
+      .from("encuesta_beraca")
+      .select("usuario_id, asiste, acompanantes, creado")
+      .order("creado", { ascending: true });
+    setEncuestaRespuestas((data ?? []) as { usuario_id: string; asiste: boolean; acompanantes: number; creado: string }[]);
+  }
 
   async function cargarAudit(userId: string) {
     if (!userId) return;
@@ -635,6 +645,111 @@ export default function Admin() {
             )}
           </>
         )}
+      </section>
+
+      {/* Encuesta Beraca */}
+      <section>
+        <button
+          onClick={() => { setEncuestaAbierta((v) => !v); if (!encuestaAbierta) cargarEncuesta(); }}
+          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
+        >
+          <h2 className="font-display text-5xl text-wc26-blue uppercase">Encuesta Beraca</h2>
+          <span className="material-symbols-outlined text-3xl text-wc26-blue/50 transition-transform duration-200" style={{ transform: encuestaAbierta ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </button>
+        {encuestaAbierta && (() => {
+          const van = encuestaRespuestas.filter((r) => r.asiste);
+          const noVan = encuestaRespuestas.filter((r) => !r.asiste);
+          const totalPersonas = van.reduce((s, r) => s + 1 + r.acompanantes, 0);
+          const sinResponder = usuarios.filter((u) => !encuestaRespuestas.find((r) => r.usuario_id === u.id));
+
+          return (
+            <div className="space-y-4">
+              {/* Resumen */}
+              <div className="flex flex-wrap gap-4 rounded-xl border border-cancha-600/30 bg-cancha-800 px-5 py-4">
+                <div className="text-center">
+                  <p className="font-mono text-2xl font-bold text-lima">{van.length}</p>
+                  <p className="text-xs text-crema/50">confirman asistencia</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-mono text-2xl font-bold text-wc26-red">{noVan.length}</p>
+                  <p className="text-xs text-crema/50">no pueden ir</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-mono text-2xl font-bold text-amber-400">{sinResponder.length}</p>
+                  <p className="text-xs text-crema/50">sin responder</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-mono text-2xl font-bold text-crema">{totalPersonas}</p>
+                  <p className="text-xs text-crema/50">personas en total</p>
+                </div>
+                <button
+                  onClick={cargarEncuesta}
+                  title="Actualizar"
+                  className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-cancha-600 text-crema/40 transition hover:border-wc26-blue/50 hover:text-wc26-blue"
+                >
+                  <span className="material-symbols-outlined text-base">refresh</span>
+                </button>
+              </div>
+
+              {/* Van */}
+              {van.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-widest text-lima/70">Confirmados ✅</p>
+                  <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
+                    {van.map((r, i) => {
+                      const u = usuarios.find((x) => x.id === r.usuario_id);
+                      return (
+                        <div key={r.usuario_id} className={`flex items-center justify-between px-5 py-3 ${i < van.length - 1 ? "border-b border-cancha-600/20" : ""}`}>
+                          <span className="text-sm font-semibold text-crema">{u?.nombre ?? r.usuario_id}</span>
+                          <span className="text-xs text-crema/50">
+                            {r.acompanantes === 0 ? "Solo" : `+ ${r.acompanantes} acompañante${r.acompanantes !== 1 ? "s" : ""}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* No van */}
+              {noVan.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-widest text-wc26-red/70">No pueden ir ❌</p>
+                  <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
+                    {noVan.map((r, i) => {
+                      const u = usuarios.find((x) => x.id === r.usuario_id);
+                      return (
+                        <div key={r.usuario_id} className={`px-5 py-3 ${i < noVan.length - 1 ? "border-b border-cancha-600/20" : ""}`}>
+                          <span className="text-sm font-semibold text-crema/60">{u?.nombre ?? r.usuario_id}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Sin responder */}
+              {sinResponder.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-400/70">Pendientes ⏳</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sinResponder.map((u) => (
+                      <span key={u.id} className="rounded-full border border-amber-400/20 bg-amber-400/5 px-3 py-1 text-xs font-semibold text-amber-300/70">
+                        {u.nombre}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {encuestaRespuestas.length === 0 && (
+                <p className="text-sm text-crema/30">Nadie ha respondido aún.</p>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
     </div>

@@ -1,0 +1,165 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
+
+const EXCLUIDOS = ["Adrian007"];
+
+export function EncuestaBeraca() {
+  const { session, perfil, cargando } = useAuth();
+  const [visible, setVisible] = useState(false);
+  const [asiste, setAsiste] = useState<boolean | null>(null);
+  const [acompanantes, setAcompanantes] = useState("0");
+  const [enviando, setEnviando] = useState(false);
+  const [guardado, setGuardado] = useState(false);
+
+  useEffect(() => {
+    if (cargando || !session || !perfil) return;
+    if (EXCLUIDOS.includes(perfil.nombre)) return;
+
+    supabase
+      .from("encuesta_beraca")
+      .select("usuario_id")
+      .eq("usuario_id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) setVisible(true);
+      });
+  }, [cargando, session, perfil]);
+
+  async function enviar() {
+    if (asiste === null || !session) return;
+    setEnviando(true);
+    const acomp = asiste ? Math.max(0, parseInt(acompanantes) || 0) : 0;
+    const { error } = await supabase.from("encuesta_beraca").insert({
+      usuario_id: session.user.id,
+      asiste,
+      acompanantes: acomp,
+    });
+    setEnviando(false);
+    if (!error) {
+      setGuardado(true);
+      setTimeout(() => setVisible(false), 1800);
+    }
+  }
+
+  if (!visible) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-cancha-600/60 bg-cancha-900 shadow-2xl">
+
+        {/* Encabezado */}
+        <div className="bg-gradient-to-r from-wc26-red/20 to-wc26-blue/20 border-b border-cancha-600/40 px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🏠⚽</span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-wc26-red/80">Convivencia</p>
+              <h2 className="font-display text-2xl uppercase text-crema">Final en Beraca</h2>
+            </div>
+          </div>
+        </div>
+
+        {/* Cuerpo */}
+        <div className="px-6 py-5 space-y-5">
+
+          {/* Aviso importante */}
+          <div className="flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-400/5 px-4 py-3">
+            <span className="text-lg mt-0.5">⚠️</span>
+            <p className="text-sm text-amber-300/90 leading-relaxed">
+              <span className="font-bold">Es importante que respondas esta encuesta.</span>
+              {" "}Necesitamos organizarnos para la comida y actividades de la convivencia.
+            </p>
+          </div>
+
+          {!guardado ? (
+            <>
+              <p className="text-base font-semibold text-crema">
+                ¿Vas a ver la Final del Mundial en Beraca?
+              </p>
+
+              {/* Botones Si / No */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setAsiste(true)}
+                  className={`flex-1 rounded-xl border py-3 text-sm font-bold transition ${
+                    asiste === true
+                      ? "border-lima bg-lima/20 text-lima"
+                      : "border-cancha-600 text-crema/60 hover:border-lima/50 hover:text-crema"
+                  }`}
+                >
+                  ✅ Sí, voy
+                </button>
+                <button
+                  onClick={() => { setAsiste(false); setAcompanantes("0"); }}
+                  className={`flex-1 rounded-xl border py-3 text-sm font-bold transition ${
+                    asiste === false
+                      ? "border-wc26-red bg-wc26-red/10 text-wc26-red"
+                      : "border-cancha-600 text-crema/60 hover:border-wc26-red/50 hover:text-crema"
+                  }`}
+                >
+                  ❌ No puedo
+                </button>
+              </div>
+
+              {/* Cuadro de acompañantes — solo si va */}
+              {asiste === true && (
+                <div className="rounded-xl border border-cancha-600/50 bg-cancha-800 px-4 py-4 space-y-3">
+                  <p className="text-sm font-semibold text-crema">
+                    ¿Cuántas personas te acompañan?
+                  </p>
+                  <p className="text-xs text-crema/40">
+                    No te incluyas a ti mismo, solo a quienes te acompañan.
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setAcompanantes(String(Math.max(0, (parseInt(acompanantes) || 0) - 1)))}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-cancha-600 text-crema/50 transition hover:border-wc26-red/60 hover:text-wc26-red"
+                    >
+                      <span className="material-symbols-outlined text-base">remove</span>
+                    </button>
+                    <span className="w-10 text-center font-mono text-2xl font-bold text-lima tabular">
+                      {acompanantes}
+                    </span>
+                    <button
+                      onClick={() => setAcompanantes(String((parseInt(acompanantes) || 0) + 1))}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-cancha-600 text-crema/50 transition hover:border-lima/60 hover:text-lima"
+                    >
+                      <span className="material-symbols-outlined text-base">add</span>
+                    </button>
+                    <span className="text-sm text-crema/50">
+                      {parseInt(acompanantes) === 0
+                        ? "Solo tú"
+                        : parseInt(acompanantes) === 1
+                        ? "1 persona más"
+                        : `${acompanantes} personas más`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Botón enviar */}
+              <button
+                onClick={enviar}
+                disabled={asiste === null || enviando}
+                className="w-full rounded-xl bg-lima py-3 text-sm font-bold text-carbon transition hover:bg-limaSoft disabled:opacity-40"
+              >
+                {enviando ? "Guardando..." : "Confirmar respuesta"}
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <span className="text-4xl">{asiste ? "🎉" : "👍"}</span>
+              <p className="text-center text-base font-semibold text-lima">
+                {asiste
+                  ? "¡Perfecto! Ya quedaste anotado."
+                  : "Gracias por responder. ¡Te esperamos en la próxima!"}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
