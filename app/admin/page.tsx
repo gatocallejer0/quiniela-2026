@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import type { Partido, Perfil, Premio, PremioAdicional, Regla, PuntosAdicional } from "@/lib/types";
+import type { Partido, Perfil, Premio, PremioAdicional, Regla, PuntosAdicional, Pronostico } from "@/lib/types";
+import { calcularPuntos } from "@/lib/scoring";
 
 const TZ = "America/Guatemala";
 function fmt(iso: string) {
@@ -36,6 +37,10 @@ export default function Admin() {
   const [puntosAdAbiertos, setPuntosAdAbiertos] = useState(false);
   const [reglasAbiertos, setReglasAbiertos] = useState(false);
   const [premiosAbiertos, setPremiosAbiertos] = useState(false);
+  const [auditAbierto, setAuditAbierto] = useState(false);
+  const [auditUserId, setAuditUserId] = useState("");
+  const [auditPronos, setAuditPronos] = useState<Pronostico[]>([]);
+  const [auditCargando, setAuditCargando] = useState(false);
 
   useEffect(() => {
     if (!cargando && (!session || !perfil?.es_admin)) router.replace("/partidos");
@@ -102,6 +107,30 @@ export default function Admin() {
       setCargandoData(false);
     })();
   }, [perfil]);
+
+  async function cargarAudit(userId: string) {
+    if (!userId) return;
+    setAuditCargando(true);
+    setAuditPronos([]);
+    // Fetch all pronosticos for this user (paginated)
+    let all: Pronostico[] = [];
+    let from = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data } = await supabase
+        .from("pronosticos")
+        .select("*")
+        .eq("usuario_id", userId)
+        .order("partido_id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      const rows = (data as Pronostico[]) ?? [];
+      all = all.concat(rows);
+      if (rows.length < PAGE) break;
+      from += PAGE;
+    }
+    setAuditPronos(all);
+    setAuditCargando(false);
+  }
 
   if (cargando || !perfil?.es_admin) return null;
 
@@ -455,6 +484,159 @@ export default function Admin() {
           </div>
         ))}
       </section>
+
+      {/* Auditoría */}
+      <section>
+        <button
+          onClick={() => setAuditAbierto((v) => !v)}
+          className="mb-1 flex w-full items-center justify-between gap-3 text-left"
+        >
+          <h2 className="font-display text-5xl text-wc26-red uppercase">Auditoría</h2>
+          <span className="material-symbols-outlined text-3xl text-wc26-red/50 transition-transform duration-200" style={{ transform: auditAbierto ? "rotate(0deg)" : "rotate(-90deg)" }}>
+            expand_more
+          </span>
+        </button>
+        {auditAbierto && (
+          <>
+            <p className="mb-4 text-sm text-crema/50">
+              Revisa todos los pronósticos de un participante partido por partido.
+            </p>
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <select
+                value={auditUserId}
+                onChange={(e) => { setAuditUserId(e.target.value); setAuditPronos([]); }}
+                className="flex-1 rounded-lg border border-cancha-600 bg-cancha-700 px-3 py-2 text-sm text-crema outline-none focus:border-wc26-red/60"
+              >
+                <option value="">— Selecciona un participante —</option>
+                {usuarios.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => cargarAudit(auditUserId)}
+                disabled={!auditUserId || auditCargando}
+                className="rounded-lg bg-wc26-red px-5 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40"
+              >
+                {auditCargando ? "Cargando..." : "Ver pronósticos"}
+              </button>
+            </div>
+
+            {auditPronos.length > 0 && (() => {
+              const pronoMap: Record<number, Pronostico> = {};
+              auditPronos.forEach((pr) => { pronoMap[pr.partido_id] = pr; });
+
+              const finalizados = [...partidos].filter((p) => p.finalizado).reverse();
+              const proximos    = partidos.filter((p) => !p.finalizado);
+              const ordenados   = [...finalizados, ...proximos];
+
+              let exactos = 0, resultados = 0, fallos = 0, sinProno = 0;
+              finalizados.forEach((p) => {
+                const pr = pronoMap[p.id];
+                if (!pr) { sinProno++; return; }
+                const d = calcularPuntos(p, pr);
+                if (!d) return;
+                if (d.marcador === 3) exactos++;
+                else if (d.marcador === 1) resultados++;
+                else fallos++;
+              });
+
+              return (
+                <div className="overflow-hidden rounded-xl border border-cancha-600/30 bg-cancha-800">
+                  {/* Resumen */}
+                  <div className="flex flex-wrap gap-4 border-b border-cancha-600/30 px-5 py-3">
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-crema/40">
+                      {finalizados.length} jugados
+                    </span>
+                    <span className="text-[11px] font-semibold text-lima">✓ {exactos} exactos</span>
+                    <span className="text-[11px] font-semibold text-blue-400">~ {resultados} resultado</span>
+                    <span className="text-[11px] font-semibold text-wc26-red">✗ {fallos} fallos</span>
+                    {sinProno > 0 && (
+                      <span className="text-[11px] font-semibold text-crema/30">— {sinProno} sin prono</span>
+                    )}
+                  </div>
+
+                  {/* Filas */}
+                  {ordenados.map((p, i) => {
+                    const pr     = pronoMap[p.id];
+                    const d      = pr ? calcularPuntos(p, pr) : null;
+                    const ultimo = i === ordenados.length - 1;
+
+                    let estadoLabel = "";
+                    let estadoColor = "";
+                    if (!p.finalizado) {
+                      estadoLabel = pr ? "Pronóstico listo" : "Sin pronóstico";
+                      estadoColor = pr ? "text-crema/40" : "text-crema/25";
+                    } else if (!pr) {
+                      estadoLabel = "Sin pronóstico"; estadoColor = "text-crema/30";
+                    } else if (!d) {
+                      estadoLabel = "Pendiente"; estadoColor = "text-crema/30";
+                    } else if (d.marcador === 3) {
+                      estadoLabel = "Exacto";    estadoColor = "text-lima font-bold";
+                    } else if (d.marcador === 1) {
+                      estadoLabel = "Resultado"; estadoColor = "text-blue-400 font-semibold";
+                    } else {
+                      estadoLabel = "Fallo";     estadoColor = "text-wc26-red/80";
+                    }
+
+                    return (
+                      <div
+                        key={p.id}
+                        className={`grid grid-cols-[1fr_auto] gap-x-4 px-5 py-3 ${!ultimo ? "border-b border-cancha-600/20" : ""} ${!p.finalizado ? "opacity-50" : ""}`}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-crema/30">{fmt(p.inicio)}</p>
+                          <p className="truncate text-sm font-semibold text-crema">
+                            {p.equipo_local} vs {p.equipo_visitante}
+                          </p>
+                          {pr && (
+                            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-crema/60">
+                              <span>
+                                Prono:{" "}
+                                <span className="font-mono font-semibold text-crema">
+                                  {pr.goles_local} - {pr.goles_visitante}
+                                </span>
+                                {pr.clasificado && (
+                                  <span className="ml-1 text-crema/40">
+                                    · avanza <span className="font-semibold text-crema/70">{pr.clasificado}</span>
+                                  </span>
+                                )}
+                              </span>
+                              {p.finalizado && p.goles_local_final != null && (
+                                <span>
+                                  Real:{" "}
+                                  <span className="font-mono font-semibold text-crema">
+                                    {p.goles_local_final} - {p.goles_visitante_final ?? 0}
+                                  </span>
+                                  {p.clasificado && (
+                                    <span className="ml-1 text-crema/40">
+                                      · clasificó <span className="font-semibold text-crema/70">{p.clasificado}</span>
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className={`text-xs ${estadoColor}`}>{estadoLabel}</p>
+                          {d && (
+                            <p className="font-mono text-sm font-bold text-lima">{d.total} pts</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {auditPronos.length === 0 && !auditCargando && auditUserId && (
+              <p className="text-sm text-crema/30">Sin pronósticos para este usuario.</p>
+            )}
+          </>
+        )}
+      </section>
+
     </div>
   );
 }
