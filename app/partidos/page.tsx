@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import type { Partido, Pronostico } from "@/lib/types";
 import { calcularPuntos } from "@/lib/scoring";
+import { BotonEditarEncuesta } from "@/components/EncuestaBeraca";
 
 const TZ = "America/Guatemala";
 
@@ -107,7 +108,10 @@ export default function Partidos() {
 
   return (
     <div className="aparece">
-      <h1 className="font-display mb-1 text-5xl text-lima uppercase">Partidos</h1>
+      <div className="mb-1 flex flex-wrap items-baseline gap-3">
+        <h1 className="font-display text-5xl text-lima uppercase">Partidos</h1>
+        <BotonEditarEncuesta />
+      </div>
       <p className="mb-6 text-sm text-crema/50">
         El pron&oacute;stico se bloquea 10 minutos antes de cada partido.
       </p>
