@@ -122,6 +122,6 @@ function traducirError(msg: string): string {
   if (msg.includes("rate limit"))
     return "Demasiados intentos. Espera unos minutos y vuelve a probar.";
   if (msg.includes("banned") || msg.includes("User is banned"))
-    return "Esta cuenta ha sido desactivada.";
+    return "Nombre o PIN incorrecto.";
   return msg;
 }
