@@ -31,10 +31,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await supabase
         .from("perfiles")
-        .select("id, nombre, es_admin, pagado")
+        .select("id, nombre, es_admin, pagado, bloqueado")
         .eq("id", userId)
         .single();
-      setPerfil((data as Perfil) ?? null);
+      const p = (data as Perfil) ?? null;
+      if (p?.bloqueado) {
+        await supabase.auth.signOut();
+        return;
+      }
+      setPerfil(p);
     } catch (err) {
       console.error("cargarPerfil falló:", err);
     }
@@ -116,5 +121,7 @@ function traducirError(msg: string): string {
     return "El PIN es demasiado corto (usa 4 dígitos o más).";
   if (msg.includes("rate limit"))
     return "Demasiados intentos. Espera unos minutos y vuelve a probar.";
+  if (msg.includes("banned") || msg.includes("User is banned"))
+    return "Esta cuenta ha sido desactivada.";
   return msg;
 }

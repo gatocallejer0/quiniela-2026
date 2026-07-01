@@ -3,6 +3,7 @@ export type Perfil = {
   nombre: string;
   es_admin: boolean;
   pagado: boolean;
+  bloqueado: boolean;
 };
 
 export type Partido = {
