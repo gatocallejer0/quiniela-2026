@@ -12,7 +12,6 @@ export function BottomNav() {
 
   const items = [
     { href: "/partidos", label: "Partidos", icon: "sports_soccer" },
-    { href: "/llaves",   label: "Llaves",   icon: "account_tree"  },
     { href: "/tabla",    label: "Tabla",    icon: "leaderboard"   },
     { href: "/premios",  label: "Premios",  icon: "emoji_events"  },
     { href: "/reglas",   label: "Reglas",   icon: "gavel"         },

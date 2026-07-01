@@ -42,7 +42,6 @@ export function Nav() {
           {/* Desktop nav */}
           <nav className="hidden items-center gap-1 md:flex">
             {link("/partidos", "Partidos")}
-            {link("/llaves", "Llaves")}
             {link("/tabla", "Tabla")}
             {link("/premios", "Premios")}
             {link("/reglas", "Reglas")}
