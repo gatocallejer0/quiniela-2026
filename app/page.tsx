@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 export default function Home() {
   const { session, cargando, entrar, registrar } = useAuth();
   const router = useRouter();
-  const [modo, setModo] = useState<"entrar" | "registrar">("entrar");
+  const modo = "entrar";
   const [nombre, setNombre] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -59,21 +59,6 @@ export default function Home() {
       </div>
 
       <div className="rounded-2xl border border-cancha-600/40 bg-cancha-800 p-6 shadow-carta">
-        {/* Selector Entrar / Crear cuenta */}
-        <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-cancha-900 p-1">
-          {(["entrar", "registrar"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => { setModo(m); setError(""); }}
-              className={`rounded-lg py-2 text-sm font-bold transition ${
-                modo === m ? "bg-lima text-carbon shadow-sm" : "text-crema/50 hover:text-crema"
-              }`}
-            >
-              {m === "entrar" ? "Entrar" : "Crear cuenta"}
-            </button>
-          ))}
-        </div>
-
         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-crema/40">
           Tu nombre
         </label>
@@ -104,7 +89,7 @@ export default function Home() {
           disabled={trabajando}
           className="mt-5 w-full rounded-xl bg-lima py-3 font-bold text-carbon shadow-sm transition hover:bg-limaSoft hover:scale-[1.02] active:scale-95 disabled:opacity-60"
         >
-          {trabajando ? "..." : modo === "entrar" ? "Entrar" : "Crear mi cuenta"}
+          {trabajando ? "..." : "Entrar"}
         </button>
       </div>
 
