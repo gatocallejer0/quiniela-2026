@@ -116,11 +116,14 @@ export function BannerRecordatorio() {
   if (abiertos.length === 0) {
     if (!hayProximos) return null;
     return (
-      <div className="mb-6 flex items-center gap-3 rounded-xl border border-lima/20 bg-lima/5 px-5 py-3">
-        <span className="text-xl">✅</span>
-        <p className="text-sm font-medium text-lima">
-          ¡Vas al día! Ya tienes todos los pronósticos de las próximas 24 h.
-        </p>
+      <div className="mb-6 overflow-hidden rounded-xl border border-lima/20 bg-lima/5">
+        <div className="flex items-center gap-3 px-5 py-3">
+          <span className="text-xl">✅</span>
+          <p className="text-sm font-medium text-lima">
+            ¡Vas al día! Ya tienes todos los pronósticos de las próximas 24 h.
+          </p>
+        </div>
+        <BannerMultiplicadores />
       </div>
     );
   }
@@ -175,6 +178,53 @@ export function BannerRecordatorio() {
           );
         })}
       </ul>
+
+      <BannerMultiplicadores />
+    </div>
+  );
+}
+
+const FASES = [
+  { label: "Grupos",  multi: 1, color: "text-crema/35", bar: "bg-crema/20"    },
+  { label: "16vos",   multi: 1, color: "text-crema/35", bar: "bg-crema/20"    },
+  { label: "Octavos", multi: 2, color: "text-lima",     bar: "bg-lima"        },
+  { label: "Cuartos", multi: 3, color: "text-wc26-blue",bar: "bg-wc26-blue"   },
+  { label: "Semis",   multi: 4, color: "text-amber-400",bar: "bg-amber-400"   },
+  { label: "Final",   multi: 5, color: "text-wc26-red", bar: "bg-wc26-red"    },
+];
+
+function BannerMultiplicadores() {
+  return (
+    <div className="border-t border-cancha-600/25 px-5 py-3">
+      <p className="mb-3 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-crema/30">
+        <span>⚡</span> Los puntos se multiplican por fase
+      </p>
+      <div className="flex items-end gap-2">
+        {FASES.map((f) => (
+          <div key={f.label} className="flex flex-1 flex-col items-center gap-1">
+            {/* Barra que crece visualmente con el multiplicador */}
+            <div
+              className={`w-full rounded-sm ${f.bar}`}
+              style={{ height: 4 + (f.multi - 1) * 7 }}
+            />
+            <span className={`font-mono font-black leading-none ${f.color} ${
+              f.multi === 5 ? "text-base" :
+              f.multi === 4 ? "text-sm"   :
+              f.multi === 3 ? "text-xs"   : "text-[10px]"
+            }`}>
+              ×{f.multi}
+            </span>
+            <span className={`text-[8px] font-semibold uppercase tracking-wide ${f.color}`}>
+              {f.label}
+            </span>
+          </div>
+        ))}
+        <div className="ml-2 shrink-0 self-center rounded-lg border border-cancha-600/40 bg-cancha-700/50 px-3 py-2 text-[10px] leading-relaxed text-crema/40">
+          <p><span className="font-bold text-lima">Exacto</span> → 3 pts</p>
+          <p><span className="font-bold text-wc26-blue">Resultado</span> → 1 pt</p>
+          <p><span className="font-bold text-crema/60">+Clasific.</span> → +2 pts</p>
+        </div>
+      </div>
     </div>
   );
 }
