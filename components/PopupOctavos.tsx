@@ -22,14 +22,14 @@ export function PopupOctavos() {
 
   useEffect(() => {
     if (cargando || !session) return;
-    const visto = localStorage.getItem(STORAGE_KEY);
+    const visto = sessionStorage.getItem(STORAGE_KEY);
     if (!visto) setVisible(true);
   }, [cargando, session]);
 
   function cerrar() {
     setSaliendo(true);
     setTimeout(() => {
-      localStorage.setItem(STORAGE_KEY, "1");
+      sessionStorage.setItem(STORAGE_KEY, "1");
       setVisible(false);
     }, 350);
   }
