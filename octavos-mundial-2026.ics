@@ -1,0 +1,129 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Claude//Octavos Mundial 2026//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Octavos de Final - Mundial 2026
+X-WR-TIMEZONE:America/Guatemala
+BEGIN:VTIMEZONE
+TZID:America/Guatemala
+BEGIN:STANDARD
+DTSTART:19700101T000000
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0600
+TZNAME:CST
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:wc2026-r16-01@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260704T110000
+DTEND;TZID=America/Guatemala:20260704T133000
+SUMMARY:🇨🇦 Canadá vs Marruecos 🇲🇦 — Octavos Mundial 2026
+LOCATION:NRG Stadium (Estadio Houston)\, Houston\, EE.UU.
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Canadá vs Marruecos en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-r16-02@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260704T150000
+DTEND;TZID=America/Guatemala:20260704T173000
+SUMMARY:🇵🇾 Paraguay vs Francia 🇫🇷 — Octavos Mundial 2026
+LOCATION:Gillette Stadium (Estadio Boston)\, Foxborough\, EE.UU.
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Paraguay vs Francia en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-r16-03@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260705T140000
+DTEND;TZID=America/Guatemala:20260705T163000
+SUMMARY:🇧🇷 Brasil vs Noruega 🇳🇴 — Octavos Mundial 2026
+LOCATION:AT&T Stadium (Estadio Dallas)\, Arlington\, EE.UU.
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Brasil vs Noruega en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-r16-04@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260705T180000
+DTEND;TZID=America/Guatemala:20260705T203000
+SUMMARY:🇲🇽 México vs Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿 — Octavos Mundial 2026
+LOCATION:Estadio Azteca (Estadio Ciudad de México)\, CDMX\, México
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:México vs Inglaterra en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-r16-05@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260706T130000
+DTEND;TZID=America/Guatemala:20260706T153000
+SUMMARY:🇵🇹 Portugal vs España 🇪🇸 — Octavos Mundial 2026
+LOCATION:SoFi Stadium (Estadio Los Ángeles)\, Inglewood\, EE.UU.
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Portugal vs España en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-r16-06@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260706T180000
+DTEND;TZID=America/Guatemala:20260706T203000
+SUMMARY:🇺🇸 Estados Unidos vs Bélgica 🇧🇪 — Octavos Mundial 2026
+LOCATION:Lumen Field (Estadio Seattle)\, Seattle\, EE.UU.
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Estados Unidos vs Bélgica en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-r16-07@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260707T100000
+DTEND;TZID=America/Guatemala:20260707T123000
+SUMMARY:🇦🇷 Argentina vs Egipto 🇪🇬 — Octavos Mundial 2026
+LOCATION:Mercedes-Benz Stadium (Estadio Atlanta)\, Atlanta\, EE.UU.
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Argentina vs Egipto en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-r16-08@claude
+DTSTAMP:20260704T120000Z
+DTSTART;TZID=America/Guatemala:20260707T140000
+DTEND;TZID=America/Guatemala:20260707T163000
+SUMMARY:🇨🇭 Suiza vs Colombia 🇨🇴 — Octavos Mundial 2026
+LOCATION:BC Place (Estadio Vancouver)\, Vancouver\, Canadá
+DESCRIPTION:Octavos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Suiza vs Colombia en 30 minutos
+END:VALARM
+END:VEVENT
+END:VCALENDAR
