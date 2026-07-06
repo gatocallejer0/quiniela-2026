@@ -13,15 +13,16 @@ import { supabase } from "@/lib/supabase";
 import { calcularPuntos } from "@/lib/scoring";
 import type { Partido, Pronostico } from "@/lib/types";
 
-type Perfil = { id: string; nombre: string };
+type Perfil = { id: string; nombre: string; puntos_extra: number };
 
 const SEG = [
-  { key: "exactos",    label: "Exacto",       color: "#c6ff3a" },
-  { key: "resultados", label: "Resultado",    color: "#60a5fa" },
-  { key: "extra",      label: "Puntos extra", color: "#fbbf24" },
+  { key: "exactos",    label: "Exacto",        color: "#c6ff3a" },
+  { key: "resultados", label: "Resultado",     color: "#60a5fa" },
+  { key: "extra",      label: "Clasificado",   color: "#fbbf24" },
+  { key: "dinamicas",  label: "Actividades",   color: "#f97316" },
 ] as const;
 
-function calcularDesglose(partidos: Partido[], pronos: Pronostico[]) {
+function calcularDesglose(partidos: Partido[], pronos: Pronostico[], puntosExtra: number) {
   const map: Record<number, Pronostico> = {};
   pronos.forEach((p) => { map[p.partido_id] = p; });
 
@@ -33,7 +34,8 @@ function calcularDesglose(partidos: Partido[], pronos: Pronostico[]) {
     if (d.marcador === 1) resultados += 1 * d.multiplicador;
     extra += d.clasificadoBonus * d.multiplicador;
   }
-  return { exactos, resultados, extra, total: exactos + resultados + extra };
+  const dinamicas = puntosExtra ?? 0;
+  return { exactos, resultados, extra, dinamicas, total: exactos + resultados + extra + dinamicas };
 }
 
 // ── Tooltip ────────────────────────────────────────────────────────────────
@@ -110,7 +112,7 @@ export function DonaDesglose({ currentUid }: { currentUid: string }) {
           .select("*")
           .eq("finalizado", true)
           .order("inicio", { ascending: true }),
-        supabase.from("perfiles").select("id, nombre").order("nombre"),
+        supabase.from("perfiles").select("id, nombre, puntos_extra").order("nombre"),
       ]);
       setPartidos((ps as Partido[]) ?? []);
       setPerfiles((pfs as Perfil[]) ?? []);
@@ -143,9 +145,11 @@ export function DonaDesglose({ currentUid }: { currentUid: string }) {
     })();
   }, [selected]);
 
+  const puntosExtra = perfiles.find((p) => p.id === selected)?.puntos_extra ?? 0;
+
   const desglose = useMemo(
-    () => calcularDesglose(partidos, pronos),
-    [partidos, pronos],
+    () => calcularDesglose(partidos, pronos, puntosExtra),
+    [partidos, pronos, puntosExtra],
   );
 
   const pieData = useMemo(() => {
