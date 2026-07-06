@@ -950,6 +950,9 @@ function FilaUsuario({
   onToggle: (u: Perfil) => void;
 }) {
   const [cargando, setCargando] = useState(false);
+  const [ptsExtra, setPtsExtra] = useState(usuario.puntos_extra ?? 0);
+  const [guardandoPts, setGuardandoPts] = useState(false);
+  const [msgPts, setMsgPts] = useState("");
 
   async function toggle() {
     setCargando(true);
@@ -961,30 +964,84 @@ function FilaUsuario({
     setCargando(false);
   }
 
+  async function cambiarPts(nuevo: number) {
+    const val = Math.max(0, nuevo);
+    setPtsExtra(val);
+    setGuardandoPts(true);
+    setMsgPts("");
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ puntos_extra: val })
+      .eq("id", usuario.id);
+    setGuardandoPts(false);
+    if (!error) {
+      onToggle({ ...usuario, puntos_extra: val });
+      setMsgPts("✓");
+      setTimeout(() => setMsgPts(""), 1200);
+    } else {
+      setMsgPts("Error");
+    }
+  }
+
   return (
-    <div className={`flex items-center justify-between px-6 py-4 ${!ultimo ? "border-b border-cancha-600/30" : ""}`}>
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold text-crema">{usuario.nombre}</span>
-        {usuario.es_admin && (
-          <span className="rounded-full bg-lima/20 px-2 py-0.5 text-[10px] font-bold text-lima">Admin</span>
-        )}
+    <div className={`px-6 py-4 ${!ultimo ? "border-b border-cancha-600/30" : ""}`}>
+      <div className="flex items-center justify-between gap-3">
+        {/* Nombre */}
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-crema">{usuario.nombre}</span>
+          {usuario.es_admin && (
+            <span className="rounded-full bg-lima/20 px-2 py-0.5 text-[10px] font-bold text-lima">Admin</span>
+          )}
+        </div>
+        {/* Pagado toggle */}
+        <button
+          onClick={toggle}
+          disabled={cargando}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition ${
+            usuario.pagado
+              ? "bg-lima/20 text-lima hover:bg-lima/30"
+              : "border border-cancha-600 text-crema/40 hover:border-lima/40 hover:text-crema/70"
+          }`}
+        >
+          {usuario.pagado && (
+            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+              check_circle
+            </span>
+          )}
+          {usuario.pagado ? "Pagado" : "Pendiente"}
+        </button>
       </div>
-      <button
-        onClick={toggle}
-        disabled={cargando}
-        className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition ${
-          usuario.pagado
-            ? "bg-lima/20 text-lima hover:bg-lima/30"
-            : "border border-cancha-600 text-crema/40 hover:border-lima/40 hover:text-crema/70"
-        }`}
-      >
-        {usuario.pagado && (
-          <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-            check_circle
-          </span>
-        )}
-        {usuario.pagado ? "Pagado" : "Pendiente"}
-      </button>
+
+      {/* Puntos extra de dinámicas */}
+      <div className="mt-3 flex items-center gap-3">
+        <span className="text-xs text-crema/40">Pts. actividades</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => cambiarPts(ptsExtra - 1)}
+            disabled={guardandoPts || ptsExtra === 0}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-cancha-600 text-crema/40 transition hover:border-wc26-red/60 hover:text-wc26-red disabled:opacity-30"
+          >
+            <span className="material-symbols-outlined text-sm">remove</span>
+          </button>
+          <input
+            type="number"
+            min={0}
+            value={ptsExtra}
+            onChange={(e) => setPtsExtra(Math.max(0, parseInt(e.target.value) || 0))}
+            onBlur={(e) => cambiarPts(parseInt(e.target.value) || 0)}
+            className="w-14 rounded-lg border border-cancha-600 bg-cancha-700 py-1 text-center font-mono text-sm font-bold text-lima outline-none focus:border-lima"
+          />
+          <button
+            onClick={() => cambiarPts(ptsExtra + 1)}
+            disabled={guardandoPts}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-cancha-600 text-crema/40 transition hover:border-lima/60 hover:text-lima"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+          </button>
+        </div>
+        {msgPts && <span className={`text-xs ${msgPts === "✓" ? "text-lima" : "text-wc26-red"}`}>{msgPts}</span>}
+        {guardandoPts && <span className="text-xs text-crema/30">...</span>}
+      </div>
     </div>
   );
 }

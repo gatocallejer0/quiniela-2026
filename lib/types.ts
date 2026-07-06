@@ -4,6 +4,7 @@ export type Perfil = {
   es_admin: boolean;
   pagado: boolean;
   bloqueado: boolean;
+  puntos_extra: number;
 };
 
 export type Partido = {
