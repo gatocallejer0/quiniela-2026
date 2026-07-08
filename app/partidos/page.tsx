@@ -106,15 +106,91 @@ export default function Partidos() {
   const pasados = partidos.filter((p) => p.finalizado);
   const proximos = partidos.filter((p) => !p.finalizado);
 
+  const multi = proximos.find((p) => p.multiplicador > 1)?.multiplicador ?? 1;
+  const fase  = proximos.find((p) => p.multiplicador > 1)?.fase ?? null;
+
+  const multiColor =
+    multi === 5 ? { text: "text-wc26-red",   bg: "bg-wc26-red",   glow: "rgba(220,38,38,0.35)",   border: "border-wc26-red/30"   } :
+    multi === 4 ? { text: "text-amber-400",  bg: "bg-amber-400",  glow: "rgba(251,191,36,0.35)",  border: "border-amber-400/30"  } :
+    multi === 3 ? { text: "text-wc26-blue",  bg: "bg-wc26-blue",  glow: "rgba(96,165,250,0.35)",  border: "border-wc26-blue/30"  } :
+                  { text: "text-lima",        bg: "bg-lima",       glow: "rgba(198,255,58,0.30)",  border: "border-lima/30"       };
+
   return (
     <div className="aparece">
       <div className="mb-1 flex flex-wrap items-baseline gap-3">
         <h1 className="font-display text-5xl text-lima uppercase">Partidos</h1>
         <BotonEditarEncuesta />
       </div>
-      <p className="mb-6 text-sm text-crema/50">
+      <p className="mb-4 text-sm text-crema/50">
         El pron&oacute;stico se bloquea 10 minutos antes de cada partido.
       </p>
+
+      {/* Banner multiplicador activo */}
+      {multi > 1 && (
+        <div
+          className={`mb-6 overflow-hidden rounded-2xl border ${multiColor.border} bg-cancha-800`}
+          style={{ boxShadow: `0 0 32px ${multiColor.glow}` }}
+        >
+          <style>{`
+            @keyframes glowPulse {
+              0%,100% { opacity: 0.5; transform: scale(1); }
+              50%      { opacity: 1;   transform: scale(1.15); }
+            }
+            @keyframes slideFade {
+              from { transform: translateX(-6px); opacity: 0; }
+              to   { transform: translateX(0);    opacity: 1; }
+            }
+            @keyframes barGrow {
+              from { width: 0%; }
+              to   { width: 100%; }
+            }
+          `}</style>
+
+          <div className="flex items-center gap-4 px-5 py-4">
+            {/* Número ×N animado */}
+            <div className="relative shrink-0">
+              <div
+                className={`absolute inset-0 rounded-full ${multiColor.bg} blur-xl`}
+                style={{ animation: "glowPulse 1.8s ease-in-out infinite", opacity: 0.4 }}
+              />
+              <span
+                className={`relative font-display text-5xl font-black leading-none ${multiColor.text}`}
+                style={{ filter: `drop-shadow(0 0 12px ${multiColor.glow})` }}
+              >
+                ×{multi}
+              </span>
+            </div>
+
+            {/* Texto */}
+            <div className="flex-1 min-w-0" style={{ animation: "slideFade 0.5s ease forwards" }}>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-block h-2 w-2 rounded-full ${multiColor.bg}`}
+                  style={{ animation: "glowPulse 1.2s ease-in-out infinite" }}
+                />
+                <span className={`text-xs font-black uppercase tracking-widest ${multiColor.text}`}>
+                  {fase ?? "Eliminatorias"} · En juego
+                </span>
+              </div>
+              <p className="mt-0.5 text-sm font-semibold text-crema leading-snug">
+                Cada pronóstico correcto vale <span className={`font-black ${multiColor.text}`}>×{multi}</span> más que en grupos.
+              </p>
+              <p className="mt-0.5 text-xs text-crema/40">
+                Exacto+Clasif = {(3 + 2) * multi} pts &nbsp;·&nbsp; Exacto = {3 * multi} pts &nbsp;·&nbsp; Resultado = {1 * multi} pt
+              </p>
+            </div>
+          </div>
+
+          {/* Barra de acento inferior animada */}
+          <div className="h-0.5 w-full bg-cancha-700">
+            <div
+              className={`h-full ${multiColor.bg} opacity-60`}
+              style={{ animation: "barGrow 1.2s cubic-bezier(0.4,0,0.2,1) forwards" }}
+            />
+          </div>
+        </div>
+      )}
+
 
       {/* Stats card */}
       {!cargandoData && finalizados.length > 0 && (
