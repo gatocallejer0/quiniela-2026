@@ -1,0 +1,73 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Claude//Cuartos Mundial 2026//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Cuartos de Final - Mundial 2026
+X-WR-TIMEZONE:America/Guatemala
+BEGIN:VTIMEZONE
+TZID:America/Guatemala
+BEGIN:STANDARD
+DTSTART:19700101T000000
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0600
+TZNAME:CST
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:wc2026-qf-01@claude
+DTSTAMP:20260708T120000Z
+DTSTART;TZID=America/Guatemala:20260709T140000
+DTEND;TZID=America/Guatemala:20260709T163000
+SUMMARY:🇫🇷 Francia vs Marruecos 🇲🇦 — Cuartos Mundial 2026
+LOCATION:Gillette Stadium (Estadio Boston)\, Foxborough\, EE.UU.
+DESCRIPTION:Cuartos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Francia vs Marruecos en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-qf-02@claude
+DTSTAMP:20260708T120000Z
+DTSTART;TZID=America/Guatemala:20260710T130000
+DTEND;TZID=America/Guatemala:20260710T153000
+SUMMARY:🇪🇸 España vs Bélgica 🇧🇪 — Cuartos Mundial 2026
+LOCATION:SoFi Stadium (Estadio Los Ángeles)\, Inglewood\, EE.UU.
+DESCRIPTION:Cuartos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:España vs Bélgica en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-qf-03@claude
+DTSTAMP:20260708T120000Z
+DTSTART;TZID=America/Guatemala:20260711T150000
+DTEND;TZID=America/Guatemala:20260711T173000
+SUMMARY:🇳🇴 Noruega vs Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿 — Cuartos Mundial 2026
+LOCATION:Hard Rock Stadium (Estadio Miami)\, Miami Gardens\, EE.UU.
+DESCRIPTION:Cuartos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Noruega vs Inglaterra en 30 minutos
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:wc2026-qf-04@claude
+DTSTAMP:20260708T120000Z
+DTSTART;TZID=America/Guatemala:20260711T190000
+DTEND;TZID=America/Guatemala:20260711T213000
+SUMMARY:🇦🇷 Argentina vs Suiza 🇨🇭 — Cuartos Mundial 2026
+LOCATION:Arrowhead Stadium (Estadio Kansas City)\, Kansas City\, EE.UU.
+DESCRIPTION:Cuartos de final - Copa del Mundo FIFA 2026\nHora de Guatemala (GMT-6)
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Argentina vs Suiza en 30 minutos
+END:VALARM
+END:VEVENT
+END:VCALENDAR

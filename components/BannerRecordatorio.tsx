@@ -185,12 +185,12 @@ export function BannerRecordatorio() {
 }
 
 const FASES = [
-  { label: "Grupos",  multi: 1, color: "text-crema/35", bar: "bg-crema/20"    },
-  { label: "16vos",   multi: 1, color: "text-crema/35", bar: "bg-crema/20"    },
-  { label: "Octavos", multi: 2, color: "text-lima",     bar: "bg-lima"        },
-  { label: "Cuartos", multi: 3, color: "text-wc26-blue",bar: "bg-wc26-blue"   },
-  { label: "Semis",   multi: 4, color: "text-amber-400",bar: "bg-amber-400"   },
-  { label: "Final",   multi: 5, color: "text-wc26-red", bar: "bg-wc26-red"    },
+  { label: "Grupos",  multi: 1, color: "text-crema/25", bar: "bg-crema/15",   activa: false },
+  { label: "16vos",   multi: 1, color: "text-crema/25", bar: "bg-crema/15",   activa: false },
+  { label: "Octavos", multi: 2, color: "text-crema/25", bar: "bg-crema/15",   activa: false },
+  { label: "Cuartos", multi: 3, color: "text-wc26-blue",bar: "bg-wc26-blue",  activa: true  },
+  { label: "Semis",   multi: 4, color: "text-amber-400",bar: "bg-amber-400",  activa: false },
+  { label: "Final",   multi: 5, color: "text-wc26-red", bar: "bg-wc26-red",   activa: false },
 ];
 
 function BannerMultiplicadores() {
@@ -202,7 +202,6 @@ function BannerMultiplicadores() {
       <div className="flex items-end gap-2">
         {FASES.map((f) => (
           <div key={f.label} className="flex flex-1 flex-col items-center gap-1">
-            {/* Barra que crece visualmente con el multiplicador */}
             <div
               className={`w-full rounded-sm ${f.bar}`}
               style={{ height: 4 + (f.multi - 1) * 7 }}
@@ -217,6 +216,11 @@ function BannerMultiplicadores() {
             <span className={`text-[8px] font-semibold uppercase tracking-wide ${f.color}`}>
               {f.label}
             </span>
+            {f.activa && (
+              <span className="rounded-full bg-wc26-blue px-1 py-px text-[7px] font-black text-white">
+                NOW
+              </span>
+            )}
           </div>
         ))}
         <div className="ml-2 shrink-0 self-center rounded-lg border border-cancha-600/40 bg-cancha-700/50 px-3 py-2 text-[10px] leading-relaxed text-crema/40">
