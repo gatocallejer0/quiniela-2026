@@ -4,7 +4,6 @@ import { AuthProvider } from "@/lib/auth";
 import { Nav } from "@/components/Nav";
 import { BottomNav } from "@/components/BottomNav";
 import { LoadingGuard } from "@/components/LoadingGuard";
-import { BannerRecordatorio } from "@/components/BannerRecordatorio";
 import { EncuestaBeraca } from "@/components/EncuestaBeraca";
 import { PopupOctavos } from "@/components/PopupOctavos";
 
@@ -24,7 +23,6 @@ export default function RootLayout({
         <AuthProvider>
           <Nav />
           <main className="mx-auto w-full max-w-[1280px] px-4 pb-24 pt-20 md:px-12">
-            <BannerRecordatorio />
             <PopupOctavos />
             <EncuestaBeraca />
             <LoadingGuard>{children}</LoadingGuard>

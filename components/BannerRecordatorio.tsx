@@ -188,8 +188,8 @@ const FASES = [
   { label: "Grupos",  multi: 1, color: "text-crema/25", bar: "bg-crema/15",   activa: false },
   { label: "16vos",   multi: 1, color: "text-crema/25", bar: "bg-crema/15",   activa: false },
   { label: "Octavos", multi: 2, color: "text-crema/25", bar: "bg-crema/15",   activa: false },
-  { label: "Cuartos", multi: 3, color: "text-wc26-blue",bar: "bg-wc26-blue",  activa: true  },
-  { label: "Semis",   multi: 4, color: "text-amber-400",bar: "bg-amber-400",  activa: false },
+  { label: "Cuartos", multi: 3, color: "text-wc26-blue",bar: "bg-wc26-blue",  activa: false },
+  { label: "Semis",   multi: 4, color: "text-amber-400",bar: "bg-amber-400",  activa: true  },
   { label: "Final",   multi: 5, color: "text-wc26-red", bar: "bg-wc26-red",   activa: false },
 ];
 
