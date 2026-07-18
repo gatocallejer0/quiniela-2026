@@ -4,7 +4,19 @@
 --  Horas en UTC (Guatemala UTC-6 → +6h)
 -- ============================================================
 
-insert into partidos (id, equipo_local, equipo_visitante, inicio, fase, multiplicador)
-values
-  (215, 'Perdedor Semifinal 1', 'Perdedor Semifinal 2', '2026-07-18 21:00:00+00', '3er puesto', 5),
-  (216, 'Ganador Semifinal 1',  'Ganador Semifinal 2',  '2026-07-19 19:00:00+00', 'Final',       5);
+-- Los IDs 215/216 ya existen (placeholders insertados antes) → update en vez de insert
+update partidos set
+  equipo_local     = 'Francia',
+  equipo_visitante = 'Inglaterra',
+  inicio           = '2026-07-18 21:00:00+00',
+  fase             = '3er puesto',
+  multiplicador    = 5
+where id = 215;
+
+update partidos set
+  equipo_local     = 'España',
+  equipo_visitante = 'Argentina',
+  inicio           = '2026-07-19 19:00:00+00',
+  fase             = 'Final',
+  multiplicador    = 5
+where id = 216;
