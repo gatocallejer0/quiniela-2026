@@ -11,7 +11,7 @@
 
 import type { Partido } from "./types";
 
-export type Fase      = "Dieciseisavos" | "Octavos" | "Cuartos" | "Semifinal" | "Tercero" | "Final";
+export type Fase      = "Dieciseisavos" | "Octavos" | "Cuartos" | "Semifinal" | "3er puesto" | "Final";
 export type Posicion  = "local" | "visitante";
 
 export interface BracketSlot {
@@ -26,14 +26,14 @@ export interface BracketSlot {
 }
 
 // Orden de los tabs en la UI
-export const FASES: Fase[] = ["Dieciseisavos", "Octavos", "Cuartos", "Semifinal", "Tercero", "Final"];
+export const FASES: Fase[] = ["Dieciseisavos", "Octavos", "Cuartos", "Semifinal", "3er puesto", "Final"];
 
 export const FASE_LABEL: Record<Fase, string> = {
   Dieciseisavos: "16vos",
   Octavos:       "8vos",
   Cuartos:       "4tos",
   Semifinal:     "Semis",
-  Tercero:       "3er lugar",
+  "3er puesto":  "3er lugar",
   Final:         "Final",
 };
 
@@ -85,16 +85,16 @@ export const BRACKET: BracketSlot[] = [
   { id: "QF4", fase: "Cuartos", partidoId: null /* TODO: poner ID real de la BD */, alimentaA: "SF2", posicion: "visitante" },
 
   // ── SEMIFINALES ───────────────────────────────────────────────────────────
-  { id: "SF1", fase: "Semifinal", partidoId: null /* TODO: poner ID real de la BD */, alimentaA: "F1", posicion: "local"     },
-  { id: "SF2", fase: "Semifinal", partidoId: null /* TODO: poner ID real de la BD */, alimentaA: "F1", posicion: "visitante" },
+  { id: "SF1", fase: "Semifinal", partidoId: 213, alimentaA: "F1", posicion: "local"     },
+  { id: "SF2", fase: "Semifinal", partidoId: 214, alimentaA: "F1", posicion: "visitante" },
 
   // ── TERCER LUGAR ──────────────────────────────────────────────────────────
   // Equipos = perdedores de SF1 y SF2. La propagación automática solo trackea
   // ganadores, así que el admin debe crear este partido con los equipos ya conocidos.
-  { id: "T1",  fase: "Tercero",  partidoId: null /* TODO: poner ID real de la BD */, alimentaA: null, posicion: null },
+  { id: "T1",  fase: "3er puesto", partidoId: 215, alimentaA: null, posicion: null },
 
   // ── FINAL ─────────────────────────────────────────────────────────────────
-  { id: "F1",  fase: "Final",    partidoId: null /* TODO: poner ID real de la BD */, alimentaA: null, posicion: null },
+  { id: "F1",  fase: "Final",    partidoId: 216, alimentaA: null, posicion: null },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

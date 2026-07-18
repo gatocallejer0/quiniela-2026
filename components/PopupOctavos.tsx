@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/lib/auth";
 
-const STORAGE_KEY = "popup-semifinal-2026-visto";
+const STORAGE_KEY = "popup-final-2026-visto";
 
 const FASES = [
-  { label: "Grupos",  multi: 1, activa: false },
-  { label: "16vos",   multi: 1, activa: false },
-  { label: "Octavos", multi: 2, activa: false },
-  { label: "Cuartos", multi: 3, activa: false },
-  { label: "Semis",   multi: 4, activa: true  },
-  { label: "Final",   multi: 5, activa: false },
+  { label: "Grupos",    multi: 1, activa: false },
+  { label: "16vos",     multi: 1, activa: false },
+  { label: "Octavos",   multi: 2, activa: false },
+  { label: "Cuartos",   multi: 3, activa: false },
+  { label: "Semis",     multi: 4, activa: false },
+  { label: "3er lugar", multi: 5, activa: true  },
+  { label: "Final",     multi: 5, activa: true  },
 ];
 
 export function PopupOctavos() {
@@ -69,9 +70,9 @@ export function PopupOctavos() {
       >
         {/* Fondos decorativos */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-amber-400/15 blur-3xl" />
-          <div className="absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-wc26-red/10 blur-3xl" />
-          <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/5 blur-2xl" />
+          <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-wc26-red/15 blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-amber-400/10 blur-3xl" />
+          <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-wc26-red/5 blur-2xl" />
         </div>
 
         {/* Header */}
@@ -93,17 +94,17 @@ export function PopupOctavos() {
           <h2
             className="font-display text-5xl uppercase leading-none"
             style={{
-              background: "linear-gradient(90deg, #fbbf24, #ffffff, #fbbf24)",
+              background: "linear-gradient(90deg, #dc2626, #ffffff, #dc2626)",
               backgroundSize: "200% auto",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               animation: "shimmerB 3s linear infinite",
             }}
           >
-            Semifinales
+            Gran Final
           </h2>
           <p className="font-display text-2xl uppercase text-crema/50">Mundial 2026</p>
-          <p className="mt-1 text-xs text-crema/30">Solo quedan 2 partidos antes de la Final</p>
+          <p className="mt-1 text-xs text-crema/30">Tercer Lugar y Final — los últimos 2 partidos</p>
         </div>
 
         {/* Multiplicador */}
@@ -118,16 +119,16 @@ export function PopupOctavos() {
             <span
               className="font-display text-9xl font-black leading-none"
               style={{
-                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fde68a 100%)",
+                background: "linear-gradient(135deg, #dc2626 0%, #f87171 50%, #fecaca 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                filter: "drop-shadow(0 0 28px rgba(251,191,36,0.45))",
+                filter: "drop-shadow(0 0 28px rgba(220,38,38,0.45))",
               }}
             >
-              ×4
+              ×5
             </span>
           </div>
-          <p className="mt-1 text-sm text-crema/50">el cuádruple que en la fase de grupos</p>
+          <p className="mt-1 text-sm text-crema/50">el quíntuple que en la fase de grupos</p>
         </div>
 
         {/* Escala de fases */}
@@ -140,24 +141,24 @@ export function PopupOctavos() {
               <div key={f.label} className="flex flex-1 flex-col items-center gap-1">
                 <div
                   className={`w-full rounded-t-sm ${
-                    f.activa ? "bg-amber-400" :
+                    f.activa ? "bg-wc26-red" :
                     f.multi >= 5 ? "bg-crema/15" : "bg-cancha-600/40"
                   }`}
                   style={{ height: 4 + (f.multi - 1) * 7 }}
                 />
                 <span className={`font-mono font-black leading-none ${
-                  f.activa    ? "text-amber-400 text-sm" :
+                  f.activa    ? "text-wc26-red text-sm" :
                   f.multi > 4 ? "text-crema/25 text-[10px]" : "text-crema/20 text-[10px]"
                 }`}>
                   ×{f.multi}
                 </span>
                 <span className={`text-[8px] font-semibold uppercase ${
-                  f.activa ? "text-amber-400/80" : "text-crema/20"
+                  f.activa ? "text-wc26-red/80" : "text-crema/20"
                 }`}>
                   {f.label}
                 </span>
                 {f.activa && (
-                  <span className="mt-0.5 rounded-full bg-amber-400 px-1.5 py-px text-[7px] font-black text-carbon">
+                  <span className="mt-0.5 rounded-full bg-wc26-red px-1.5 py-px text-[7px] font-black text-white">
                     AHORA
                   </span>
                 )}
@@ -168,17 +169,17 @@ export function PopupOctavos() {
 
         {/* Frase motivacional */}
         <div
-          className="mx-7 mb-5 rounded-2xl border border-amber-400/20 bg-amber-400/5 px-5 py-4 text-center"
+          className="mx-7 mb-5 rounded-2xl border border-wc26-red/20 bg-wc26-red/5 px-5 py-4 text-center"
           style={{ animation: "floatUp 3s ease-in-out infinite" }}
         >
           <p className="text-lg font-bold text-crema leading-snug">
-            ¡Estamos a un paso de la Final! 🔥
+            ¡Es la Gran Final! 🏆
           </p>
-          <p className="mt-1 text-sm font-semibold text-amber-400">
-            Un partido vale hasta 20 puntos ahora.
+          <p className="mt-1 text-sm font-semibold text-wc26-red">
+            Un partido vale hasta 25 puntos ahora.
           </p>
           <p className="mt-2 text-xs text-crema/40">
-            (3 pts exacto + 2 clasificado) × 4 = 20 pts máximo por partido
+            (3 pts exacto + 2 clasificado) × 5 = 25 pts máximo por partido
           </p>
         </div>
 
@@ -186,9 +187,9 @@ export function PopupOctavos() {
         <div className="px-7 pb-7">
           <button
             onClick={cerrar}
-            className="w-full rounded-2xl bg-amber-400 py-3.5 text-sm font-bold text-carbon transition hover:opacity-90 active:scale-95"
+            className="w-full rounded-2xl bg-wc26-red py-3.5 text-sm font-bold text-white transition hover:opacity-90 active:scale-95"
           >
-            ¡A pronosticar las Semifinales! ⚽
+            ¡A pronosticar Tercer Lugar y Final! 🏆
           </button>
         </div>
       </div>
