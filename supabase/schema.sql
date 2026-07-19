@@ -63,11 +63,11 @@ create policy "admin inserta partidos" on partidos
   for insert with check (
     exists (select 1 from perfiles where id = auth.uid() and es_admin)
   );
--- Solo puede editar marcadores una vez iniciado el partido (no antes, "fuera de horario")
+-- Mismo cierre que los pronósticos: se bloquea 10 minutos antes del inicio
 create policy "admin edita partidos" on partidos
   for update using (
     exists (select 1 from perfiles where id = auth.uid() and es_admin)
-    and inicio <= now()
+    and inicio <= now() + interval '10 minutes'
   );
 
 -- PRONOSTICOS:

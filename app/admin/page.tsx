@@ -1466,10 +1466,10 @@ function FilaAdmin({ partido, usuarios, conProno }: {
   const [clasificado, setClasificado] = useState(partido.clasificado ?? "");
   const [fin, setFin] = useState(partido.finalizado);
   const [msg, setMsg] = useState("");
-  const noEmpezado = new Date(partido.inicio).getTime() > Date.now();
+  const noEmpezado = new Date(partido.inicio).getTime() - 10 * 60 * 1000 > Date.now();
 
   async function guardar() {
-    if (noEmpezado) { setMsg("El partido aún no inicia"); return; }
+    if (noEmpezado) { setMsg("Bloqueado hasta 10 min antes del inicio"); return; }
     setMsg("...");
     const cambios: Record<string, unknown> = {
       goles_local_final:     gl === "" ? null : Number(gl),
@@ -1491,7 +1491,7 @@ function FilaAdmin({ partido, usuarios, conProno }: {
     <div className="rounded-xl border border-cancha-600/40 bg-cancha-800 p-3">
       <div className="mb-2 text-xs text-crema/40">
         {fmt(partido.inicio)}
-        {noEmpezado && <span className="ml-2 text-wc26-red/70">aún no inicia · no editable</span>}
+        {noEmpezado && <span className="ml-2 text-wc26-red/70">bloqueado · no editable</span>}
       </div>
 
       {esKnockout && (
