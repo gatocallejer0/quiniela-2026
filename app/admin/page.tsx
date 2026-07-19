@@ -1466,8 +1466,10 @@ function FilaAdmin({ partido, usuarios, conProno }: {
   const [clasificado, setClasificado] = useState(partido.clasificado ?? "");
   const [fin, setFin] = useState(partido.finalizado);
   const [msg, setMsg] = useState("");
+  const noEmpezado = new Date(partido.inicio).getTime() > Date.now();
 
   async function guardar() {
+    if (noEmpezado) { setMsg("El partido aún no inicia"); return; }
     setMsg("...");
     const cambios: Record<string, unknown> = {
       goles_local_final:     gl === "" ? null : Number(gl),
@@ -1487,7 +1489,10 @@ function FilaAdmin({ partido, usuarios, conProno }: {
 
   return (
     <div className="rounded-xl border border-cancha-600/40 bg-cancha-800 p-3">
-      <div className="mb-2 text-xs text-crema/40">{fmt(partido.inicio)}</div>
+      <div className="mb-2 text-xs text-crema/40">
+        {fmt(partido.inicio)}
+        {noEmpezado && <span className="ml-2 text-wc26-red/70">aún no inicia · no editable</span>}
+      </div>
 
       {esKnockout && (
         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-crema/30">
@@ -1504,7 +1509,8 @@ function FilaAdmin({ partido, usuarios, conProno }: {
           min={0}
           value={gl}
           onChange={(e) => setGl(e.target.value)}
-          className="w-12 rounded-lg border border-cancha-600 bg-cancha-700 py-1.5 text-center font-bold text-crema outline-none focus:border-lima"
+          disabled={noEmpezado}
+          className="w-12 rounded-lg border border-cancha-600 bg-cancha-700 py-1.5 text-center font-bold text-crema outline-none focus:border-lima disabled:opacity-40"
         />
         <span className="text-crema/40">:</span>
         <input
@@ -1512,7 +1518,8 @@ function FilaAdmin({ partido, usuarios, conProno }: {
           min={0}
           value={gv}
           onChange={(e) => setGv(e.target.value)}
-          className="w-12 rounded-lg border border-cancha-600 bg-cancha-700 py-1.5 text-center font-bold text-crema outline-none focus:border-lima"
+          disabled={noEmpezado}
+          className="w-12 rounded-lg border border-cancha-600 bg-cancha-700 py-1.5 text-center font-bold text-crema outline-none focus:border-lima disabled:opacity-40"
         />
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-crema">
           {partido.equipo_visitante}
@@ -1528,7 +1535,8 @@ function FilaAdmin({ partido, usuarios, conProno }: {
           <select
             value={clasificado}
             onChange={(e) => setClasificado(e.target.value)}
-            className="w-full rounded-lg border border-cancha-600 bg-cancha-700 px-3 py-1.5 text-sm text-crema outline-none focus:border-lima"
+            disabled={noEmpezado}
+            className="w-full rounded-lg border border-cancha-600 bg-cancha-700 px-3 py-1.5 text-sm text-crema outline-none focus:border-lima disabled:opacity-40"
           >
             <option value="">— Sin definir —</option>
             <option value={partido.equipo_local}>{partido.equipo_local}</option>
@@ -1543,15 +1551,17 @@ function FilaAdmin({ partido, usuarios, conProno }: {
             type="checkbox"
             checked={fin}
             onChange={(e) => setFin(e.target.checked)}
-            className="h-4 w-4 accent-lima"
+            disabled={noEmpezado}
+            className="h-4 w-4 accent-lima disabled:opacity-40"
           />
           Finalizado
         </label>
         <div className="flex items-center gap-3">
-          {msg && <span className="text-xs text-lima">{msg}</span>}
+          {msg && <span className={`text-xs ${msg === "Guardado" ? "text-lima" : "text-wc26-red"}`}>{msg}</span>}
           <button
             onClick={guardar}
-            className="rounded-lg bg-lima px-4 py-1.5 text-sm font-bold text-carbon hover:bg-limaSoft"
+            disabled={noEmpezado}
+            className="rounded-lg bg-lima px-4 py-1.5 text-sm font-bold text-carbon hover:bg-limaSoft disabled:opacity-40 disabled:hover:bg-lima"
           >
             Guardar
           </button>
